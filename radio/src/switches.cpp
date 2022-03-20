@@ -552,7 +552,7 @@ void checkSwitches()
   swarnstate_t last_bad_switches = 0xff;
   swarnstate_t states = g_model.switchWarningState;
 
-#if defined(PCBTARANIS) || defined(PCBHORUS)
+#if defined(PCBTARANIS) || defined(PCBHORUS) || defined(PCBI6X)
   uint8_t bad_pots = 0, last_bad_pots = 0xff;
 #endif
 
@@ -603,7 +603,6 @@ void checkSwitches()
         }
       }
     }
-#if !defined(PCBI6X)
     if (g_model.potsWarnMode) {
       evalFlightModeMixes(e_perout_mode_normal, 0);
       bad_pots = 0;
@@ -617,7 +616,6 @@ void checkSwitches()
         }
       }
     }
-#endif
 #else
     for (int i=0; i<NUM_SWITCHES-1; i++) {
       if (!(g_model.switchWarningEnable & (1<<i))) {
@@ -641,10 +639,11 @@ void checkSwitches()
     backlightOn();
 
     // first - display warning
-#if defined(PCBTARANIS) || defined(PCBHORUS)|| defined(PCBI6X)
-    if ((last_bad_switches != switches_states) /*|| (last_bad_pots != bad_pots)*/) {
+#if defined(PCBTARANIS) || defined(PCBHORUS) || defined(PCBI6X)
+    if ((last_bad_switches != switches_states) || (last_bad_pots != bad_pots)) {
 #if defined(PCBI6X)
-      RAISE_ALERT(STR_SWITCHWARN, NULL, STR_PRESSANYKEYTOSKIP, last_bad_switches == 0xff ? AU_SWITCH_ALERT : AU_NONE);
+      RAISE_ALERT(STR_SWITCHWARN, NULL, STR_PRESSANYKEYTOSKIP,
+        (last_bad_switches == 0xff|| last_bad_pots == 0xff) ? AU_SWITCH_ALERT : AU_NONE);
 #else
       drawAlertBox(STR_SWITCHWARN, NULL, STR_PRESSANYKEYTOSKIP);
       if (last_bad_switches == 0xff || last_bad_pots == 0xff) {
@@ -694,7 +693,6 @@ void checkSwitches()
         }
 #endif
       }
-#if !defined(PCBI6X)
       if (g_model.potsWarnMode) {
         if (y == 4*FH+3) {
           y = 6*FH-2;
@@ -735,7 +733,6 @@ void checkSwitches()
         }
       }
       last_bad_pots = bad_pots;
-#endif // PCBI6X
 #else
     if (last_bad_switches != switches_states) {
       RAISE_ALERT(STR_SWITCHWARN, NULL, STR_PRESSANYKEYTOSKIP, last_bad_switches == 0xff ? AU_SWITCH_ALERT : AU_NONE);

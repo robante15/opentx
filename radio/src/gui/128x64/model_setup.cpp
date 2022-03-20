@@ -70,6 +70,9 @@ enum MenuModelSetupItems {
   ITEM_MODEL_SWITCHES_WARNING2,
   ITEM_MODEL_POTS_WARNING,
 #endif
+#if defined(PCBI6X)
+  ITEM_MODEL_POTS_WARNING,
+#endif
   ITEM_MODEL_BEEP_CENTER,
   ITEM_MODEL_USE_GLOBAL_FUNCTIONS,
 #if defined(PCBTARANIS) || defined(PCBI6X)
@@ -676,7 +679,7 @@ void menuModelSetup(event_t event)
 #endif
         break;
       }
-#if defined(PCBTARANIS)
+#if defined(PCBTARANIS) || defined(PCBI6X)
       case ITEM_MODEL_POTS_WARNING:
         lcdDrawTextAlignedLeft(y, STR_POTWARNING);
         lcdDrawTextAtIndex(MODEL_SETUP_2ND_COLUMN, y, "\004""OFF\0""Man\0""Auto", g_model.potsWarnMode, (menuHorizontalPosition == 0) ? attr : 0);
