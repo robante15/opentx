@@ -136,13 +136,6 @@ set(BOOTLOADER_SRC
   )
 endif()
 
-if(PCB STREQUAL I6X)
-    set(BOOTLOADER_SRC
-    ${BOOTLOADER_SRC}
-    ../../../../../targets/${TARGET_DIR}/i2c_common_v2.cpp
-    )
-endif()
-
 if(NOT (PCB STREQUAL X10 OR PCB STREQUAL X12S))
   set(BOOTLOADER_SRC
     ${BOOTLOADER_SRC}
@@ -167,7 +160,7 @@ else()
       ${BOOTLOADER_SRC}
       ../../../../../${STM32LIB_DIR}/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_usart.c
       ../../../../../serial.cpp
-      ../aux_serial_driver.cpp
+      ../../../../../targets/common/arm/stm32/aux_serial_driver.cpp
       )
   endif()
 endif()

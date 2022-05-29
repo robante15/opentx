@@ -53,9 +53,11 @@ int usbPlugged()
   static uint8_t debounced_state = 0;
   static uint8_t last_state = 0;
 
+#if defined(PCBI6X) && !defined(PCBI6X_USB_VBUS)
   if(globalData.usbDetect == USB_DETECT_ON) {
     return 1;
   }
+#endif
 
   if (GPIO_ReadInputDataBit(USB_GPIO, USB_GPIO_PIN_VBUS)) {
     if (last_state) {
@@ -104,6 +106,7 @@ void usbInit()
 
 void usbStart()
 {
+  watchdogSuspend(200); // 2s, PCBI6X fix for occasional reboots on joystick connect
   switch (getSelectedUsbMode()) {
 #if !defined(BOOT)
     case USB_JOYSTICK_MODE:

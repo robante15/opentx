@@ -27,6 +27,15 @@ uint8_t prev_power = 0xFD;  // unused power value
 
 uint8_t packet[40];
 
+// int16_t telem_AFHDS2A [6];
+// uint8_t telem_status = 0;
+
+uint8_t  packet[AFHDS2A_TXPACKET_SIZE]; 
+
+//#define NUM_CHN 16
+
+// Servo data
+//uint16_t Channel_data[NUM_CHN];
 //Protocol variables
 ID_t ID;
 uint8_t packet_count = 0;
@@ -100,6 +109,14 @@ inline void TX_RX_PutVal(uint32_t Val) {
   tmp |= (Val >> 1) & 0x01;
   RF_RxTx_GPIO_PORT->BSRR = (uint32_t)((RF_RxTx_PIN_MASK << 16) | (tmp << 8));
 }
+
+// Channel value -125%<->125% is scaled to 16bit value with no limit
+//int16_t convert_channel_16b_nolimit(uint8_t num, int16_t min, int16_t max)
+//{
+//	int32_t val=Channel_data[num];				// 0<->2047
+//	val=(val-CHANNEL_MIN_100)*(max-min)/(CHANNEL_MAX_100-CHANNEL_MIN_100)+min;
+//	return (uint16_t)val;
+//}
 
 void A7105_AntSwitch(void) {
   static uint8_t sw = 0;

@@ -24,6 +24,9 @@
 #define AFHDS2A_NUMFREQ	 16
 #define RADIO_PPM_CENTER 1500
 
+#define AFHDS2A_TXPACKET_SIZE 38
+#define AFHDS2A_RXPACKET_SIZE 37
+
 //#define FORCE_AFHDS2A_TUNING 0
 enum A7105_POWER
 {
@@ -48,28 +51,9 @@ enum A7105_POWER
 #define CHANNEL_MAX_125	2047	//	125%
 #define CHANNEL_MIN_125	0		//	125%
 
-//Channel definitions
-#define	CH1	0
-#define	CH2	1
-#define	CH3	2
-#define	CH4	3
-#define	CH5	4
-#define	CH6	5
-#define	CH7	6
-#define	CH8	7
-#define	CH9	8
-#define	CH10	9
-#define	CH11	10
-#define	CH12	11
-#define	CH13	12
-#define	CH14	13
-#define	CH15	14
-#define	CH16	15
-
 extern uint8_t protocol_flags;
 extern uint8_t prev_power; // unused power value
-
-extern uint8_t  packet[40];
+extern uint8_t  packet[AFHDS2A_TXPACKET_SIZE];
 
 // Protocol variables
 typedef union {

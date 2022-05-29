@@ -22,18 +22,18 @@
 
 void extmoduleSendNextFrame();
 
-inline void EnablePPMTim(void) {
-  TRACE("EnablePPMTim");
-  SET_BIT(EXTMODULE_TIMER->CR1, TIM_CR1_CEN);
-}
-inline void DisablePPMTim(void) {
-  TRACE("DisablePPMTim");
-  CLEAR_BIT(EXTMODULE_TIMER->CR1, TIM_CR1_CEN);
-}
-inline void EnablePPMOut(void) {
-  TRACE("EnablePPMOut");
-  SET_BIT(EXTMODULE_TIMER->CCER, TIM_CCER_CC2E);
-}
+//inline void EnablePPMTim(void) {
+//  TRACE("EnablePPMTim");
+//  SET_BIT(EXTMODULE_TIMER->CR1, TIM_CR1_CEN);
+//}
+//inline void DisablePPMTim(void) {
+//  TRACE("DisablePPMTim");
+//  CLEAR_BIT(EXTMODULE_TIMER->CR1, TIM_CR1_CEN);
+//}
+// inline void EnablePPMOut(void) {
+//   TRACE("EnablePPMOut");
+//   SET_BIT(EXTMODULE_TIMER->CCER, TIM_CCER_CC2E);
+// }
 inline void DisablePPMOut(void) {
   TRACE("DisablePPMOut");
   CLEAR_BIT(EXTMODULE_TIMER->CCER, TIM_CCER_CC2E);
@@ -99,7 +99,7 @@ void extmoduleTimerStart(uint32_t period, uint8_t state) {
   NVIC_EnableIRQ(EXTMODULE_TIMER_IRQn);
   NVIC_SetPriority(EXTMODULE_TIMER_IRQn, 2);
 
-  EnablePPMTim();
+  EXTMODULE_TIMER->CR1 |= TIM_CR1_CEN; // Start counter
 }
 
 void extmodulePpmStart() {
@@ -121,7 +121,7 @@ void extmodulePpmStart() {
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_Init(EXTMODULE_TX_GPIO, &GPIO_InitStructure);
 
-  EnablePPMOut();
+  EXTMODULE_TIMER->CCER |= TIM_CCER_CC2E;
 }
 
 inline void extmoduleSendNextFrame() {

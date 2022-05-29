@@ -35,7 +35,7 @@
 #define WARN_MEM (!(g_eeGeneral.warnOpts & WARN_MEM_BIT))
 #define BEEP_VAL ((g_eeGeneral.warnOpts & WARN_BVAL_BIT) >> 3)
 
-#define EEPROM_VER 219
+#define EEPROM_VER 220
 #define FIRST_CONV_EEPROM_VER 216
 
 #define GET_PPM_POLARITY(idx) g_model.moduleData[idx].ppm.pulsePol
@@ -70,7 +70,7 @@
 #define IS_HAPTIC_FUNC(func) (0)
 #endif
 
-#define HAS_ENABLE_PARAM(func) ((func) < FUNC_FIRST_WITHOUT_ENABLE)
+#define HAS_ENABLE_PARAM(func) ((func) < FUNC_FIRST_WITHOUT_ENABLE || (func == FUNC_BACKLIGHT))
 #define HAS_REPEAT_PARAM(func) (IS_PLAY_FUNC(func) || IS_HAPTIC_FUNC(func))
 
 #define CFN_EMPTY(p) (!(p)->swtch)
@@ -485,14 +485,22 @@ enum AFHDS2A_Subtype {
   AFHDS2A_SUBTYPE_PPM_IBUS,
   AFHDS2A_SUBTYPE_PWM_SBUS,
   AFHDS2A_SUBTYPE_PPM_SBUS,
-  AFHDS2A_SUBTYPE_LAST = AFHDS2A_SUBTYPE_PPM_SBUS
+  AFHDS2A_SUBTYPE_PWM_IB16,
+  AFHDS2A_SUBTYPE_PPM_IB16,
+  AFHDS2A_SUBTYPE_PWM_SB16,
+  AFHDS2A_SUBTYPE_PPM_SB16,
+  AFHDS2A_SUBTYPE_LAST = AFHDS2A_SUBTYPE_PPM_SB16
 };
 const char STR_SUBTYPE_AFHDS2A[] =
     "\010"
     "PWM,IBUS"
     "PPM,IBUS"
     "PWM,SBUS"
-    "PPM,SBUS";
+    "PPM,SBUS"
+    "PWM,IB16"
+    "PPM,IB16"
+    "PWM,SB16"
+    "PPM,SB16";
 #endif
 
 enum AntennaTypes {

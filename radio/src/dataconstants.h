@@ -77,13 +77,9 @@
   #define MAX_EXPOS                    14
   #define MAX_LOGICAL_SWITCHES         12
   #define MAX_SPECIAL_FUNCTIONS        11 // number of functions assigned to switches
-  #define MAX_TRAINER_CHANNELS         8
+  #define MAX_TRAINER_CHANNELS         16
   #define MAX_INPUTS                   16
-#if defined(PCBI6X_ELRSV2)
   #define MAX_TELEMETRY_SENSORS        26 // 48b each
-#else
-  #define MAX_TELEMETRY_SENSORS        30
-#endif
   #define MAX_SCRIPTS				           0
 #else
   #define MAX_MODELS                   16
@@ -213,7 +209,9 @@ enum BeeperMode {
   };
   enum TrainerMode {
     TRAINER_MODE_MASTER_TRAINER_JACK,
+#if !defined(PCBI6X)
     TRAINER_MODE_SLAVE,
+#endif
 #if defined(PCBTARANIS)
     TRAINER_MODE_MASTER_SBUS_EXTERNAL_MODULE,
     TRAINER_MODE_MASTER_CPPM_EXTERNAL_MODULE,
@@ -236,6 +234,8 @@ enum BeeperMode {
   #define TRAINER_MODE_MAX()             TRAINER_MODE_SLAVE_BLUETOOTH
 #elif defined(PCBX7) || defined(PCBXLITE)
   #define TRAINER_MODE_MAX()             TRAINER_MODE_MASTER_CPPM_EXTERNAL_MODULE
+#elif defined(PCBI6X)
+  #define TRAINER_MODE_MAX()             TRAINER_MODE_MASTER_BATTERY_COMPARTMENT
 #else
   #define TRAINER_MODE_MAX()             HAS_WIRELESS_TRAINER_HARDWARE() ? TRAINER_MODE_MASTER_BATTERY_COMPARTMENT : TRAINER_MODE_MASTER_CPPM_EXTERNAL_MODULE
 #endif
@@ -255,15 +255,17 @@ enum UartModes {
   UART_MODE_NONE,
 #endif
   UART_MODE_TELEMETRY_MIRROR,
-  UART_MODE_TELEMETRY,
-  UART_MODE_SBUS_TRAINER,
-  UART_MODE_LUA,
-  UART_MODE_COUNT,
 #if !defined(PCBI6X)
-  UART_MODE_MAX = UART_MODE_COUNT-1
-#else
-  UART_MODE_MAX = UART_MODE_COUNT-1-3 // only off/debug or mirror
+  UART_MODE_TELEMETRY,
 #endif
+#if defined(SBUS)
+  UART_MODE_SBUS_TRAINER,
+#endif
+#if defined(LUA)
+  UART_MODE_LUA,
+#endif
+  UART_MODE_COUNT,
+  UART_MODE_MAX = UART_MODE_COUNT-1
 };
 
 #if defined(PCBHORUS)
@@ -341,17 +343,17 @@ enum TelemetryUnit {
 enum TelemetryScreenType {
   TELEMETRY_SCREEN_TYPE_NONE,
   TELEMETRY_SCREEN_TYPE_VALUES,
-  TELEMETRY_SCREEN_TYPE_GAUGES,
-#if defined(LUA)
+  TELEMETRY_SCREEN_TYPE_BARS,
   TELEMETRY_SCREEN_TYPE_SCRIPT,
+#if defined(LUA)
   TELEMETRY_SCREEN_TYPE_MAX = TELEMETRY_SCREEN_TYPE_SCRIPT
 #else
-  TELEMETRY_SCREEN_TYPE_MAX = TELEMETRY_SCREEN_TYPE_GAUGES
+  TELEMETRY_SCREEN_TYPE_MAX = TELEMETRY_SCREEN_TYPE_BARS
 #endif
 };
 #define MAX_TELEMETRY_SCREENS 4
 #define TELEMETRY_SCREEN_TYPE(screenIndex) TelemetryScreenType((g_model.frsky.screensType >> (2*(screenIndex))) & 0x03)
-#define IS_BARS_SCREEN(screenIndex)        (TELEMETRY_SCREEN_TYPE(screenIndex) == TELEMETRY_SCREEN_TYPE_GAUGES)
+#define IS_BARS_SCREEN(screenIndex)        (TELEMETRY_SCREEN_TYPE(screenIndex) == TELEMETRY_SCREEN_TYPE_BARS)
 
 #define FAILSAFE_CHANNEL_HOLD          2000
 #define FAILSAFE_CHANNEL_NOPULSE       2001

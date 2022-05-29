@@ -92,6 +92,8 @@
   #define TR_VTRAINERMODES     TR_VTRAINER_MASTER_JACK TR_VTRAINER_SLAVE_JACK TR_VTRAINER_MASTER_SBUS_MODULE TR_VTRAINER_MASTER_CPPM_MODULE TR_VTRAINER_MASTER_BATTERY TR_VTRAINER_BLUETOOTH
 #elif defined(PCBTARANIS)
   #define TR_VTRAINERMODES     TR_VTRAINER_MASTER_JACK TR_VTRAINER_SLAVE_JACK TR_VTRAINER_MASTER_SBUS_MODULE TR_VTRAINER_MASTER_CPPM_MODULE TR_VTRAINER_MASTER_BATTERY
+#elif defined(PCBI6X)
+  #define TR_VTRAINERMODES     TR_VTRAINER_MASTER_JACK TR_VTRAINER_MASTER_BATTERY
 #else
   #define TR_VTRAINERMODES     TR_VTRAINER_MASTER_JACK TR_VTRAINER_SLAVE_JACK TR_VTRAINER_MASTER_CPPM_MODULE TR_VTRAINER_MASTER_BATTERY
 #endif
@@ -127,8 +129,8 @@ extern const char STR_OPEN9X[];
 #endif
 #define OFS_TRNCHN             (OFS_TRNMODE + sizeof(TR_TRNMODE))
 #if defined(PCBTARANIS) || defined(PCBHORUS) || defined(PCBI6X)
-  #define OFS_AUX_SERIALMODES       (OFS_TRNCHN + sizeof(TR_TRNCHN))
-  #define OFS_SWTYPES          (OFS_AUX_SERIALMODES + sizeof(TR_AUX_SERIALMODES))
+  #define OFS_AUX_SERIAL_MODES       (OFS_TRNCHN + sizeof(TR_TRNCHN))
+  #define OFS_SWTYPES          (OFS_AUX_SERIAL_MODES + sizeof(TR_AUX_SERIAL_MODES))
   #define OFS_POTTYPES         (OFS_SWTYPES + sizeof(TR_SWTYPES))
   #define OFS_SLIDERTYPES      (OFS_POTTYPES + sizeof(TR_POTTYPES))
   #define OFS_VTRIMINC         (OFS_SLIDERTYPES + sizeof(TR_SLIDERTYPES))
@@ -158,9 +160,13 @@ extern const char STR_OPEN9X[];
 #define OFS_VALARM             (OFS_VTELEMUNIT + sizeof(TR_VTELEMUNIT))
 #define OFS_VALARMFN           (OFS_VALARM + sizeof(TR_VALARM))
 #define OFS_VTELPROTO          (OFS_VALARMFN + sizeof(TR_VALARMFN))
+#if !defined(PCBI6X)
 #define OFS_GPSFORMAT          (OFS_VTELPROTO + sizeof(TR_VTELPROTO))
 #define OFS_AMPSRC             (OFS_GPSFORMAT + sizeof(TR_GPSFORMAT))
 #define OFS_VARIOSRC           (OFS_AMPSRC + sizeof(TR_AMPSRC))
+#else
+#define OFS_VARIOSRC           (OFS_VTELPROTO + sizeof(TR_VTELPROTO))
+#endif
 #define OFS_VSCREEN            (OFS_VARIOSRC + sizeof(TR_VARIOSRC))
 #define OFS_VTEMPLATES         (OFS_VSCREEN + sizeof(TR_VTELEMSCREENTYPE))
 #define OFS_VSWASHTYPE         (OFS_VTEMPLATES)
@@ -179,23 +185,39 @@ extern const char STR_OPEN9X[];
 #endif
 #define OFS_DATETIME            (OFS_VTMRMODES + sizeof(TR_VTMRMODES))
 #define OFS_VPERSISTENT         (OFS_DATETIME + sizeof(TR_DATETIME))
-#define OFS_VLCD                (OFS_VPERSISTENT + sizeof(TR_VPERSISTENT))
-#define OFS_VUNITSSYSTEM        (OFS_VLCD + sizeof(TR_VLCD))
-#define OFS_VBEEPCOUNTDOWN      (OFS_VUNITSSYSTEM + sizeof(TR_VUNITSSYSTEM))
+#if !defined(PCBI6X)
+  #define OFS_VLCD                (OFS_VPERSISTENT + sizeof(TR_VPERSISTENT))
+  #define OFS_VUNITSSYSTEM        (OFS_VLCD + sizeof(TR_VLCD))
+  #define OFS_VBEEPCOUNTDOWN      (OFS_VUNITSSYSTEM + sizeof(TR_VUNITSSYSTEM))
+#else
+  #define OFS_VBEEPCOUNTDOWN      (OFS_VPERSISTENT + sizeof(TR_VPERSISTENT))
+#endif
 #define OFS_VVARIOCENTER        (OFS_VBEEPCOUNTDOWN + sizeof(TR_VBEEPCOUNTDOWN))
-#define OFS_COUNTRYCODES        (OFS_VVARIOCENTER + sizeof(TR_VVARIOCENTER))
-#define OFS_USBDETECTMODES      (OFS_COUNTRYCODES + sizeof(TR_COUNTRYCODES))
+#if !defined(PCBI6X)
+  #define OFS_COUNTRYCODES        (OFS_VVARIOCENTER + sizeof(TR_VVARIOCENTER))
+  #define OFS_USBDETECTMODES      (OFS_COUNTRYCODES + sizeof(TR_COUNTRYCODES))
+#else
+  #define OFS_USBDETECTMODES      (OFS_VVARIOCENTER + sizeof(TR_VVARIOCENTER))
+#endif
 #define OFS_USBMODES            (OFS_USBDETECTMODES + sizeof(TR_USBDETECTMODES))
 #define OFS_VFAILSAFE           (OFS_USBMODES + sizeof(TR_USBMODES))
 #define OFS_VTRAINERMODES       (OFS_VFAILSAFE + sizeof(TR_VFAILSAFE))
 #define OFS_TARANIS_PROTOCOLS        (OFS_VTRAINERMODES + sizeof(TR_VTRAINERMODES))
-#define OFS_R9M_REGION               (OFS_TARANIS_PROTOCOLS + sizeof(TR_TARANIS_PROTOCOLS))
-#define OFS_R9M_FCC_POWER_VALUES     (OFS_R9M_REGION + sizeof(TR_R9M_REGION))
-#define OFS_R9M_LBT_POWER_VALUES     (OFS_R9M_FCC_POWER_VALUES + sizeof(TR_R9M_FCC_POWER_VALUES))
-#define OFS_TELEMETRY_PROTOCOLS      (OFS_R9M_LBT_POWER_VALUES + sizeof(TR_R9M_LBT_POWER_VALUES))
-#define OFS_XJT_PROTOCOLS            (OFS_TELEMETRY_PROTOCOLS + sizeof(TR_TELEMETRY_PROTOCOLS))
-#define OFS_DSM_PROTOCOLS            (OFS_XJT_PROTOCOLS + sizeof(TR_XJT_PROTOCOLS))
-#define OFS_I6X_PROTOCOLS            (OFS_DSM_PROTOCOLS + sizeof(TR_DSM_PROTOCOLS))
+#if !defined(PCBI6X)
+  #define OFS_R9M_REGION               (OFS_TARANIS_PROTOCOLS + sizeof(TR_TARANIS_PROTOCOLS))
+  #define OFS_R9M_FCC_POWER_VALUES     (OFS_R9M_REGION + sizeof(TR_R9M_REGION))
+  #define OFS_R9M_LBT_POWER_VALUES     (OFS_R9M_FCC_POWER_VALUES + sizeof(TR_R9M_FCC_POWER_VALUES))
+  #define OFS_TELEMETRY_PROTOCOLS      (OFS_R9M_LBT_POWER_VALUES + sizeof(TR_R9M_LBT_POWER_VALUES))
+#else
+  #define OFS_TELEMETRY_PROTOCOLS      (OFS_TARANIS_PROTOCOLS + sizeof(TR_TARANIS_PROTOCOLS))
+#endif
+#if !defined(PCBI6X)
+  #define OFS_XJT_PROTOCOLS            (OFS_TELEMETRY_PROTOCOLS + sizeof(TR_TELEMETRY_PROTOCOLS))
+  #define OFS_DSM_PROTOCOLS            (OFS_XJT_PROTOCOLS + sizeof(TR_XJT_PROTOCOLS))
+  #define OFS_I6X_PROTOCOLS            (OFS_DSM_PROTOCOLS + sizeof(TR_DSM_PROTOCOLS))
+#else
+  #define OFS_I6X_PROTOCOLS            (OFS_TELEMETRY_PROTOCOLS + sizeof(TR_TELEMETRY_PROTOCOLS))
+#endif
 #if defined(MULTIMODULE)
   #define OFS_MULTI_PROTOCOLS   (OFS_I6X_PROTOCOLS + sizeof(TR_I6X_PROTOCOLS))
   #define OFS_VOLTSRC           (OFS_MULTI_PROTOCOLS + sizeof(TR_MULTI_PROTOCOLS))
@@ -225,7 +247,7 @@ extern const char STR_OPEN9X[];
 #define STR_VBEEPMODE           (STR_OPEN9X + OFS_VBEEPMODE)
 #define STR_TRNMODE             (STR_OPEN9X + OFS_TRNMODE)
 #define STR_TRNCHN              (STR_OPEN9X + OFS_TRNCHN)
-#define STR_AUX_SERIALMODES      (STR_OPEN9X + OFS_AUX_SERIALMODES)
+#define STR_AUX_SERIAL_MODES      (STR_OPEN9X + OFS_AUX_SERIAL_MODES)
 #define STR_SWTYPES             (STR_OPEN9X + OFS_SWTYPES)
 #define STR_POTTYPES            (STR_OPEN9X + OFS_POTTYPES)
 #define STR_SLIDERTYPES         (STR_OPEN9X + OFS_SLIDERTYPES)
@@ -619,7 +641,6 @@ extern const char STR_PERSISTENT_MAH[];
 #define LEN_CALIB_FIELDS               PSIZE(TR_BATT_CALIB)
 #endif
 
-#if defined(NAVIGATION_MENUS)
   extern const char STR_SELECT_MODEL[];
   extern const char STR_CREATE_CATEGORY[];
   extern const char STR_RENAME_CATEGORY[];
@@ -643,15 +664,19 @@ extern const char STR_PERSISTENT_MAH[];
   extern const char STR_RESET_TIMER3[];
   extern const char STR_RESET_TELEMETRY[];
   extern const char STR_STATISTICS[];
+  extern const char STR_SAVEALLDATA[];
   extern const char STR_ABOUT_US[];
   extern const char STR_USB_JOYSTICK[];
   extern const char STR_USB_MASS_STORAGE[];
   extern const char STR_USB_SERIAL[];
   extern const char STR_SETUP_SCREENS[];
   extern const char STR_MONITOR_SCREENS[];
-#endif
 
 extern const char STR_RESET_BTN[];
+extern const char STR_DEBUG[];
+extern const char STR_KEYS_BTN[];
+extern const char STR_ANALOGS_BTN[];
+extern const char STR_CALIB_BTN[];
 
 #if defined(SDCARD)
   extern const char STR_BACKUP_MODEL[];
@@ -930,7 +955,7 @@ extern const char STR_BLCOLOR[];
   extern const char STR_SCALE[];
   extern const char STR_VIEW_CHANNELS[];
   extern const char STR_POTWARNING[];
-  extern const char STR_AUX_SERIALMODE[];
+  extern const char STR_AUX_SERIAL_MODE[];
   extern const char STR_THROTTLE_LABEL[];
   extern const char STR_SCRIPT[];
   extern const char STR_INPUTS[];

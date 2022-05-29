@@ -51,8 +51,13 @@ const uint8_t bchout_ar[] = {
     0x87, 0x8D, 0x93, 0x9C, 0xB1, 0xB4,
     0xC6, 0xC9, 0xD2, 0xD8, 0xE1, 0xE4};
 
+uint8_t channel_order(uint8_t setup, uint8_t x)
+{
+  return ((*(bchout_ar + setup) >> (6 - (x - 1) * 2)) & 3) + 1;
+}
+
 uint8_t channel_order(uint8_t x) {
-  return (((*(bchout_ar + g_eeGeneral.templateSetup) >> (6 - (x - 1) * 2)) & 3) + 1);
+  return channel_order(g_eeGeneral.templateSetup, x);
 }
 
 /*
@@ -72,23 +77,20 @@ volatile tmr10ms_t g_tmr10ms;
 volatile uint8_t rtc_count = 0;
 uint32_t watchdogTimeout = 0;
 
-void watchdogSuspend(uint32_t timeout) {
+void watchdogSuspend(uint32_t timeout) 
+{
   watchdogTimeout = timeout;
 }
 
-void per10ms() {
+void per10ms() 
+{
   g_tmr10ms++;
-  static uint16_t wdt_cnt = 0;
-  wdt_cnt++;
-  if (wdt_cnt > 10) {  // per 100ms
-    wdt_cnt = 0;
-    wdt_reset();
+
+  if (watchdogTimeout)
+  {
+    watchdogTimeout -= 1;
+    wdt_reset(); // Retrigger hardware watchdog
   }
-  // if (watchdogTimeout)
-  // {
-  //   watchdogTimeout -= 1;
-  //   wdt_reset(); // Retrigger hardware watchdog
-  // }
 
 #if defined(GUI)
   if (lightOffCounter)
@@ -699,21 +701,35 @@ void checkBacklight() {
     if (inputsMoved()) {
       inactivity.counter = 0;
       if (g_eeGeneral.backlightMode & e_backlight_mode_sticks) {
-        backlightOn();
+        resetBacklightTimeout();
       }
     }
 
-    bool backlightOn = (g_eeGeneral.backlightMode == e_backlight_mode_on || lightOffCounter || isFunctionActive(FUNCTION_BACKLIGHT));
-    if (flashCounter)
-      backlightOn = !backlightOn;
-    if (backlightOn)
+    if (requiredBacklightBright == BACKLIGHT_FORCED_ON) {
+      currentBacklightBright = g_eeGeneral.backlightBright;
       BACKLIGHT_ENABLE();
-    else
-      BACKLIGHT_DISABLE();
+    }
+    else {
+      bool backlightOn = ((g_eeGeneral.backlightMode == e_backlight_mode_on) ||
+                          (g_eeGeneral.backlightMode != e_backlight_mode_off && lightOffCounter) ||
+                          (g_eeGeneral.backlightMode == e_backlight_mode_off && isFunctionActive(FUNCTION_BACKLIGHT)));
+
+      if (flashCounter) {
+        backlightOn = !backlightOn;
+      }
+
+      if (backlightOn) {
+        currentBacklightBright = requiredBacklightBright;
+        BACKLIGHT_ENABLE();
+      }
+      else {
+        BACKLIGHT_DISABLE();
+      }
+    }
   }
 }
 
-void backlightOn() {
+void resetBacklightTimeout() {
   lightOffCounter = ((uint16_t)g_eeGeneral.lightAutoOff * 250) << 1;
 }
 
@@ -736,7 +752,7 @@ void doSplash() {
 #endif
 
   if (SPLASH_NEEDED()) {
-    backlightOn();
+    resetBacklightTimeout();
     drawSplash();
 
 #if defined(PCBSKY9X)
@@ -854,9 +870,10 @@ void checkAll() {
   checkLowEEPROM();
 #endif
 
-  if (g_eeGeneral.chkSum == evalChkSum()) {
-    checkTHR();
-  }
+  // we don't check the throttle stick if the radio is not calibrated
+  if (g_eeGeneral.chkSum == evalChkSum())
+    checkThrottleStick();
+
   checkSwitches();
   checkFailsafe();
   checkRSSIAlarmsDisabled();
@@ -894,27 +911,31 @@ void checkLowEEPROM() {
 }
 #endif
 
-void checkTHR() {
-  uint8_t thrchn = ((g_model.thrTraceSrc == 0) || (g_model.thrTraceSrc > NUM_POTS + NUM_SLIDERS)) ? THR_STICK : g_model.thrTraceSrc + NUM_STICKS - 1;
+bool isThrottleWarningAlertNeeded()
+{
+  if (g_model.disableThrottleWarning) {
+    return false;
+  }
   // throttle channel is either the stick according stick mode (already handled in evalInputs)
   // or P1 to P3;
   // in case an output channel is choosen as throttle source (thrTraceSrc>NUM_POTS+NUM_SLIDERS) we assume the throttle stick is the input
   // no other information available at the moment, and good enough to my option (otherwise too much exceptions...)
-
-  if (g_model.disableThrottleWarning) {
-    return;
-  }
+  uint8_t thrchn = ((g_model.thrTraceSrc==0) || (g_model.thrTraceSrc>NUM_POTS+NUM_SLIDERS)) ? THR_STICK : g_model.thrTraceSrc+NUM_STICKS-1;
 
   GET_ADC_IF_MIXER_NOT_RUNNING();
-
   evalInputs(e_perout_mode_notrainer);  // let do evalInputs do the job
 
   int16_t v = calibratedAnalogs[thrchn];
-  if (g_model.thrTraceSrc && g_model.throttleReversed) {  //TODO : proper review of THR source definition and handling
+  if (g_model.thrTraceSrc && g_model.throttleReversed) {  // TODO : proper review of THR source definition and handling
     v = -v;
   }
-  if (v <= THRCHK_DEADBAND - 1024) {
-    return;  // prevent warning if throttle input OK
+  return v > THRCHK_DEADBAND - 1024;
+}
+
+void checkThrottleStick()
+{
+  if (!isThrottleWarningAlertNeeded()) {
+    return;
   }
 
   // first - display warning; also deletes inputs if any have been before
@@ -925,23 +946,18 @@ void checkTHR() {
   bool refresh = false;
 #endif
 
-  while (1) {
-    GET_ADC_IF_MIXER_NOT_RUNNING();
-
-    evalInputs(e_perout_mode_notrainer);  // let do evalInputs do the job
-
-    v = calibratedAnalogs[thrchn];
-    if (g_model.thrTraceSrc && g_model.throttleReversed) {  //TODO : proper review of THR source definition and handling
-      v = -v;
+  while (!getEvent()) {
+    if (!isThrottleWarningAlertNeeded()) {
+      return;
     }
 
 #if defined(PWR_BUTTON_PRESS)
-    uint32_t pwr_check = pwrCheck();
-    if (pwr_check == e_power_off) {
+    uint32_t power = pwrCheck();
+    if (power == e_power_off) {
       break;
-    } else if (pwr_check == e_power_press) {
+    } else if (power == e_power_press) {
       refresh = true;
-    } else if (pwr_check == e_power_on && refresh) {
+    } else if (power == e_power_on && refresh) {
       RAISE_ALERT(STR_THROTTLEWARN, STR_THROTTLENOTIDLE, STR_PRESSANYKEYTOSKIP, AU_NONE);
       refresh = false;
     }
@@ -950,10 +966,6 @@ void checkTHR() {
       break;
     }
 #endif
-
-    if (keyDown() || v <= THRCHK_DEADBAND - 1024) {
-      break;
-    }
 
     checkBacklight();
 
@@ -1410,11 +1422,7 @@ void doMixerPeriodicUpdates()
         s_cnt_1s -= 10;
         sessionTimer += 1;
         inactivity.counter++;
-#if defined(PCBI6X)
         if ((((uint8_t)inactivity.counter) & 0x07) == 0x01 && g_eeGeneral.inactivityTimer && inactivity.counter > ((uint16_t)g_eeGeneral.inactivityTimer * 60))
-#else
-        if ((((uint8_t)inactivity.counter) & 0x07) == 0x01 && g_eeGeneral.inactivityTimer && g_vbat100mV > 50 && inactivity.counter > ((uint16_t)g_eeGeneral.inactivityTimer * 60))
-#endif
           AUDIO_INACTIVITY();
 
 #if defined(AUDIO) || defined(PCBI6X)
@@ -1546,14 +1554,27 @@ void opentxClose(uint8_t shutdown) {
   logsClose();
 #endif
 
+  saveAllData();
+
+  while (IS_PLAYING(ID_PLAY_PROMPT_BASE + AU_BYE)) {
+    RTOS_WAIT_MS(10);
+  }
+
+  RTOS_WAIT_MS(100);
+
+#if defined(SDCARD)
+  sdDone();
+#endif
+}
+
+void saveAllData() {
+
   storageFlushCurrentModel();
 
-#if !defined(REVA)
   if (sessionTimer > 0) {
     g_eeGeneral.globalTimer += sessionTimer;
     sessionTimer = 0;
   }
-#endif
 
 #if defined(PCBSKY9X)
   uint32_t mAhUsed = g_eeGeneral.mAhUsed + Current_used * (488 + g_eeGeneral.txCurrentCalibration) / 8192 / 36;
@@ -1565,16 +1586,6 @@ void opentxClose(uint8_t shutdown) {
   g_eeGeneral.unexpectedShutdown = 0;
   storageDirty(EE_GENERAL);
   storageCheck(true);
-
-  while (IS_PLAYING(ID_PLAY_PROMPT_BASE + AU_BYE)) {
-    RTOS_WAIT_MS(10);
-  }
-
-  RTOS_WAIT_MS(100);
-
-#if defined(SDCARD)
-  sdDone();
-#endif
 }
 
 #if defined(STM32)
@@ -1819,6 +1830,7 @@ void opentxInit(OPENTX_INIT_ARGS) {
 #endif
 #if defined(AUDIO)
   currentSpeakerVolume = requiredSpeakerVolume = g_eeGeneral.speakerVolume + VOLUME_LEVEL_DEF;
+  currentBacklightBright = requiredBacklightBright = g_eeGeneral.backlightBright;
 #if !defined(SOFTWARE_VOLUME)
   setScaledVolume(currentSpeakerVolume);
 #endif
@@ -1845,7 +1857,7 @@ void opentxInit(OPENTX_INIT_ARGS) {
 
   if (g_eeGeneral.backlightMode != e_backlight_mode_off) {
     // on Tx start turn the light on
-    backlightOn();
+    resetBacklightTimeout();
   }
 
   if (!globalData.unexpectedShutdown) {
@@ -1861,11 +1873,8 @@ void opentxInit(OPENTX_INIT_ARGS) {
 #if defined(GUI)
   lcdSetContrast();
 #endif
-  backlightOn();
-  
-#if defined(PCBSKY9X) && !defined(SIMU)
-  init_trainer_capture();
-#endif
+  resetBacklightTimeout();
+
   startPulses();
 
   wdt_enable(WDTO_500MS);
@@ -1896,7 +1905,7 @@ int main()
   loadFonts();
 #endif
 
-#if defined(GUI) && !defined(PCBTARANIS) && !defined(PCBHORUS)
+#if defined(GUI) && !defined(PCBTARANIS) && !defined(PCBHORUS) && !defined(PCBI6X)
   // TODO remove this
   lcdInit();
 #endif
@@ -1949,7 +1958,7 @@ uint32_t pwrPressedDuration() {
 }
 
 uint32_t pwrCheck() {
-  const char *message = NULL;
+  const char *message = nullptr;
 
   enum PwrCheckState {
     PWR_CHECK_ON,

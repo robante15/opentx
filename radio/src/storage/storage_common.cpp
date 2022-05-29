@@ -93,10 +93,6 @@ void postModelLoad(bool alarms) {
     resumePulses();
   }
 
-#if defined(TELEMETRY_FRSKY)
-  frskySendAlarms();
-#endif
-
 #if defined(SDCARD)
   referenceModelAudioFiles();
 #endif
@@ -120,7 +116,7 @@ void storageFlushCurrentModel() {
       storageDirty(EE_MODEL);
     }
   }
-
+#if !defined(PCBI6X)
   if (g_model.potsWarnMode == POTS_WARN_AUTO) {
     for (int i = 0; i < NUM_POTS + NUM_SLIDERS; i++) {
       if (!(g_model.potsWarnEnabled & (1 << i))) {
@@ -129,4 +125,5 @@ void storageFlushCurrentModel() {
     }
     storageDirty(EE_MODEL);
   }
+#endif
 }

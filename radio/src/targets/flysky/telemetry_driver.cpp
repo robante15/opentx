@@ -185,7 +185,6 @@ extern "C" void TELEMETRY_DMA_TX_IRQHandler(void) {
   }
 }
 
-#define USART_FLAG_ERRORS (USART_FLAG_ORE | USART_FLAG_PE) // | USART_FLAG_FE, USART_FLAG_NE
 extern "C" void TELEMETRY_USART_IRQHandler(void) {
   DEBUG_INTERRUPT(INT_TELEM_USART);
   uint32_t status = TELEMETRY_USART->ISR;
@@ -233,16 +232,16 @@ extern "C" void TELEMETRY_USART_IRQHandler(void) {
 
 // TODO we should have telemetry in an higher layer, functions above should move to a sport_driver.cpp
 uint8_t telemetryGetByte(uint8_t* byte) {
-  // #if defined(AUX_SERIAL)
-  //   if (telemetryProtocol == PROTOCOL_FRSKY_D_SECONDARY) {
-  //     if (auxSerialMode == UART_MODE_TELEMETRY)
-  //       return auxSerialRxFifo.pop(*byte);
-  //     else
-  //       return false;
-  //   } else {
-  //     return telemetryFifo.pop(*byte);
-  //   }
-  // #else
+#if defined(AUX_SERIAL) && !defined(PCBI6X)
+  if (telemetryProtocol == PROTOCOL_FRSKY_D_SECONDARY) {
+    if (auxSerialMode == UART_MODE_TELEMETRY)
+      return auxSerialRxFifo.pop(*byte);
+    else
+      return false;
+  } else {
+    return telemetryFifo.pop(*byte);
+  }
+#else
   return telemetryFifo.pop(*byte);
-  // #endif
+#endif
 }

@@ -396,7 +396,7 @@ extern uint8_t channel_order(uint8_t x);
 
 #define HEART_TIMER_10MS               1
 #define HEART_TIMER_PULSES             2 // when multiple modules this is the first one
-#if defined(PCBTARANIS) || defined(PCBHORUS)
+#if defined(PCBTARANIS) || defined(PCBHORUS) || defined(PCBI6X)
 #define HEART_WDT_CHECK                (HEART_TIMER_10MS + (HEART_TIMER_PULSES << 0) + (HEART_TIMER_PULSES << 1))
 #else
 #define HEART_WDT_CHECK                (HEART_TIMER_10MS + HEART_TIMER_PULSES)
@@ -490,6 +490,7 @@ void doMixerPeriodicUpdates();
 void scheduleNextMixerCalculation(uint8_t module, uint16_t period_ms);
 
 void checkTrims();
+extern uint8_t currentBacklightBright;
 void perMain();
 void per10ms();
 
@@ -628,7 +629,7 @@ extern uint16_t maxMixerDuration;
 #endif
 
 void checkLowEEPROM();
-void checkTHR();
+void checkThrottleStick();
 void checkSwitches();
 void checkAlarm();
 void checkAll();
@@ -646,13 +647,10 @@ static inline void GET_ADC_IF_MIXER_NOT_RUNNING()
 
 #include "sbus.h"
 
-void backlightOn();
+void resetBacklightTimeout();
 void checkBacklight();
 
 #define BITMASK(bit) (1<<(bit))
-
-/// returns the number of elements of an array
-#define DIM(arr) (sizeof((arr))/sizeof((arr)[0]))
 
 template<class t> inline t min(t a, t b) { return a<b?a:b; }
 template<class t> inline t max(t a, t b) { return a>b?a:b; }
@@ -753,7 +751,7 @@ extern uint8_t g_vbat100mV;
 #define g_blinkTmr10ms    (*(uint8_t*)&g_tmr10ms)
 extern uint8_t            g_beepCnt;
 
-#include "trainer_input.h"
+#include "trainer.h"
 
 extern int32_t            chans[MAX_OUTPUT_CHANNELS];
 extern int16_t            ex_chans[MAX_OUTPUT_CHANNELS]; // Outputs (before LIMITS) of the last perMain
@@ -939,12 +937,12 @@ enum FunctionsActive {
   FUNCTION_TRAINER,
   FUNCTION_INSTANT_TRIM = FUNCTION_TRAINER+4,
   FUNCTION_VARIO,
-  FUNCTION_BACKLIGHT,
 #if defined(SDCARD)
   FUNCTION_LOGS,
 #endif
   FUNCTION_BACKGND_MUSIC,
   FUNCTION_BACKGND_MUSIC_PAUSE,
+  FUNCTION_BACKLIGHT,
 };
 
 #define VARIO_FREQUENCY_ZERO   700/*Hz*/
@@ -1086,6 +1084,7 @@ void clearMFP();
 #endif
 
 extern uint8_t requiredSpeakerVolume;
+extern uint8_t requiredBacklightBright;
 
 enum MainRequest {
   REQUEST_SCREENSHOT,
@@ -1096,6 +1095,7 @@ extern uint8_t mainRequestFlags;
 
 void checkBattery();
 void opentxClose(uint8_t shutdown=true);
+void saveAllData();
 void opentxInit();
 void opentxResume();
 
@@ -1209,7 +1209,7 @@ extern ReusableBuffer reusableBuffer;
 uint8_t zlen(const char *str, uint8_t size);
 bool zexist(const char *str, uint8_t size);
 unsigned int effectiveLen(const char * str, unsigned int size);
-char * strcat_zchar(char *dest, const char *name, uint8_t size, const char *defaultName=NULL, uint8_t defaultNameSize=0, uint8_t defaultIdx=0);
+char * strcat_zchar(char *dest, const char *name, uint8_t size, const char *defaultName=nullptr, uint8_t defaultNameSize=0, uint8_t defaultIdx=0);
 #define strcatFlightmodeName(dest, idx) strcat_zchar(dest, g_model.flightModeData[idx].name, LEN_FLIGHT_MODE_NAME, STR_FM, PSIZE(TR_FM), idx+1)
 #if defined(EEPROM)
 #define strcat_modelname(dest, idx) strcat_zchar(dest, modelHeaders[idx].name, LEN_MODEL_NAME, STR_MODEL, PSIZE(TR_MODEL), idx+1)

@@ -85,19 +85,21 @@ constexpr uint8_t MIXER_MAX_PERIOD = MAX_REFRESH_RATE / 1000 /*ms*/;
 
 void execMixerFrequentActions()
 {
-#if defined(SBUS)
-    processSbusInput();
-#endif
-
-#if defined(BLUETOOTH)
-      bluetoothWakeup();
-#endif
-
   if (!s_pulses_paused) {
     DEBUG_TIMER_START(debugTimerTelemetryWakeup);
     telemetryWakeup();
     DEBUG_TIMER_STOP(debugTimerTelemetryWakeup);
   }
+
+#if defined(SBUS)
+  if (g_eeGeneral.auxSerialMode == UART_MODE_SBUS_TRAINER) {
+    processSbusInput();
+  }
+#endif
+
+#if defined(BLUETOOTH)
+      bluetoothWakeup();
+#endif
 }
 
 TASK_FUNCTION(mixerTask) {
@@ -133,7 +135,7 @@ TASK_FUNCTION(mixerTask) {
     if (pwrCheck() == e_power_off) {
       TASK_RETURN();
     }
-#else
+#elif !defined(PCBI6X)
     if (isForcePowerOffRequested()) {
       pwrOff();
     }
@@ -161,8 +163,13 @@ TASK_FUNCTION(mixerTask) {
         usbJoystickUpdate();
       }
 #endif
-
-      if (heartbeat == HEART_WDT_CHECK) {
+      /**
+       * This is a workaround for PCBI6X
+       * When HEART_WDT_CHECK (int + ext module) == 7
+       * then it fails if heartbeat is up to 3 on internal module.
+       * because pulses logic is custom i have made this condition also custom.
+       */
+      if (heartbeat == HEART_WDT_CHECK || heartbeat == 3) {
         wdt_reset();
         heartbeat = 0;
       }
@@ -245,7 +252,9 @@ void tasksStart() {
   RTOS_CREATE_TASK(audioTaskId, audioTask, "Audio", audioStack, AUDIO_STACK_SIZE, AUDIO_TASK_PRIO);
 #endif
 
+#if !defined(PCBI6X)
   RTOS_CREATE_MUTEX(audioMutex);
+#endif
   RTOS_CREATE_MUTEX(mixerMutex);
 
   RTOS_START();

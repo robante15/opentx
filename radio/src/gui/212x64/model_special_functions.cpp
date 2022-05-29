@@ -52,7 +52,7 @@ void onCustomFunctionsFileSelectionMenu(const char * result)
       strcpy(directory, SOUNDS_PATH);
       strncpy(directory+SOUNDS_PATH_LNG_OFS, currentLanguagePack->id, 2);
     }
-    if (!sdListFiles(directory, func==FUNC_PLAY_SCRIPT ? SCRIPTS_EXT : SOUNDS_EXT, sizeof(cfn->play.name), NULL)) {
+    if (!sdListFiles(directory, func==FUNC_PLAY_SCRIPT ? SCRIPTS_EXT : SOUNDS_EXT, sizeof(cfn->play.name), nullptr)) {
       POPUP_WARNING(func==FUNC_PLAY_SCRIPT ? STR_NO_SCRIPTS_ON_SD : STR_NO_SOUNDS_ON_SD);
     }
   }
@@ -335,14 +335,14 @@ void menuSpecialFunctions(event_t event, CustomFunctionData * functions, CustomF
               lcdDrawMMM(MODEL_SPECIAL_FUNC_3RD_COLUMN, y, attr);
             }
           }
-#if defined(PCBX9E) || defined(PCBX9DP)
           else if (func == FUNC_BACKLIGHT) {
-            drawSlider(MODEL_SPECIAL_FUNC_3RD_COLUMN, y, CFN_PARAM(cfn), 100, attr);
-            if (active) INCDEC_SET_FLAG(eeFlags | NO_INCDEC_MARKS);
-            val_min = 0;
-            val_max = 100;
+            val_max = MIXSRC_LAST_CH;
+            drawSource(MODEL_SPECIAL_FUNC_3RD_COLUMN, y, val_displayed, attr);
+            if (active) {
+              INCDEC_SET_FLAG(eeFlags | INCDEC_SOURCE);
+              INCDEC_ENABLE_CHECK(isSourceAvailable);
+            }
           }
-#endif
 #if defined(GVARS)
           else if (func == FUNC_ADJUST_GVAR) {
             switch (CFN_GVAR_MODE(cfn)) {

@@ -255,7 +255,6 @@ void displayVoltageOrAlarm()
   #define EVT_KEY_STATISTICS             EVT_KEY_LONG(KEY_UP)
 #endif
 
-#if defined(NAVIGATION_MENUS)
 void onMainViewMenu(const char *result)
 {
   if (result == STR_RESET_TIMER1) {
@@ -269,7 +268,7 @@ void onMainViewMenu(const char *result)
     timerReset(2);
   }
 #endif
-#if !defined(PCBI6X)
+#if defined(SDCARD)
   else if (result == STR_VIEW_NOTES) {
     pushModelNotes();
   }
@@ -294,13 +293,16 @@ void onMainViewMenu(const char *result)
   else if (result == STR_STATISTICS) {
     chainMenu(menuStatisticsView);
   }
+  else if (result == STR_SAVEALLDATA) {
+    watchdogSuspend(200 /*2s*/);
+    saveAllData();
+  }
 #if !defined(PCBI6X)
   else if (result == STR_ABOUT_US) {
     chainMenu(menuAboutView);
   }
 #endif
 }
-#endif
 
 void menuMainView(event_t event)
 {
@@ -334,7 +336,6 @@ void menuMainView(event_t event)
               g_eeGeneral.view = (g_eeGeneral.view + (CHANNELS_PAGES*ALTERNATE_VIEW) + ((event==EVT_KEY_PREVIOUS_PAGE) ? -ALTERNATE_VIEW : ALTERNATE_VIEW)) % (CHANNELS_PAGES*ALTERNATE_VIEW);
       break;
 
-#if defined(NAVIGATION_MENUS)
     case EVT_KEY_CONTEXT_MENU:
       killEvents(event);
 #if defined(PCBI6X)
@@ -348,12 +349,13 @@ void menuMainView(event_t event)
       POPUP_MENU_ADD_ITEM(STR_RESET_SUBMENU);
 
       POPUP_MENU_ADD_ITEM(STR_STATISTICS);
-#if !defined(PCBI6X)
+#if defined(PCBI6X)
+      POPUP_MENU_ADD_ITEM(STR_SAVEALLDATA);
+#else
       POPUP_MENU_ADD_ITEM(STR_ABOUT_US);
 #endif
       POPUP_MENU_START(onMainViewMenu);
       break;
-#endif
 
 #if MENUS_LOCK != 2 /*no menus*/
 #if defined(EVT_KEY_LAST_MENU)
@@ -413,18 +415,7 @@ void menuMainView(event_t event)
         gvarDisplayTimer = 0;
       }
 #endif
-#if !defined(NAVIGATION_MENUS)
-      if (view == VIEW_TIMER2) {
-        timerReset(1);
-      }
-#endif
       break;
-
-#if !defined(NAVIGATION_MENUS)
-    case EVT_KEY_LONG(KEY_EXIT):
-      flightReset();
-      break;
-#endif
   }
 
   switch (view_base) {
@@ -585,6 +576,13 @@ void menuMainView(event_t event)
     if (isAsteriskDisplayed()) {
       lcdDrawChar(REBOOT_X, 0 * FH, '!', INVERS);
     }
+
+#if defined(PCBI6X)
+    // Add square in case of pending or ongoing eeprom write
+    if (storageDirtyMsk || eepromIsWriting()) {
+      lcdDrawRect(REBOOT_X + 3, 0 * FH, 4, 4);
+    }
+#endif // PCBI6X
   }
 
 #if defined(GVARS)

@@ -111,6 +111,10 @@ extern uint16_t sessionTimer;
 void boardInit(void);
 void boardOff(void);
 
+// Timers driver
+void init2MhzTimer();
+void init5msTimer();
+
 // Delays driver
 #ifdef __cplusplus
 extern "C" {
@@ -184,7 +188,7 @@ uint32_t isBootloaderStart(const uint8_t * buffer);
 #define EXTERNAL_MODULE_ON()            EXTMODULE_PWR_GPIO->BSRR = EXTMODULE_PWR_GPIO_PIN // GPIO_SetBits(EXTMODULE_PWR_GPIO, EXTMODULE_PWR_GPIO_PIN)
 #define EXTERNAL_MODULE_OFF()           EXTMODULE_PWR_GPIO->BRR = EXTMODULE_PWR_GPIO_PIN // GPIO_ResetBits(EXTMODULE_PWR_GPIO, EXTMODULE_PWR_GPIO_PIN)
 #define IS_INTERNAL_MODULE_ON()         (false)
-#define IS_EXTERNAL_MODULE_ON()         (false)
+#define IS_EXTERNAL_MODULE_ON()         (GPIO_ReadInputDataBit(EXTMODULE_PWR_GPIO, EXTMODULE_PWR_GPIO_PIN) == Bit_SET)
 #if defined(INTMODULE_USART)
   #define IS_UART_MODULE(port)          (port == INTERNAL_MODULE)
 #else
@@ -209,17 +213,11 @@ void extmoduleSendNextFrame();
 
 // Trainer driver
 #define SLAVE_MODE()                    (false) // (g_model.trainerMode == TRAINER_MODE_SLAVE)
-#if defined(PCBX9E) || defined(PCBI6X)
-  #define TRAINER_CONNECTED()           (true)
-#elif defined(PCBX7)
-  #define TRAINER_CONNECTED()           (GPIO_ReadInputDataBit(TRAINER_DETECT_GPIO, TRAINER_DETECT_GPIO_PIN) == Bit_SET)
-#elif defined(PCBXLITE)
-  #define TRAINER_CONNECTED()           false // there is no Trainer jack on Taranis X-Lite
-#else
-  #define TRAINER_CONNECTED()           (GPIO_ReadInputDataBit(TRAINER_DETECT_GPIO, TRAINER_DETECT_GPIO_PIN) == Bit_RESET)
-#endif
+#define TRAINER_CONNECTED()           (true)
+
 #if defined(TRAINER_GPIO)
   void init_trainer_capture(void);
+  void stop_trainer_capture(void);
 #else
   #define init_trainer_capture()
 #endif
@@ -237,7 +235,6 @@ void extmoduleSendNextFrame();
 
 // SBUS
 int sbusGetByte(uint8_t * byte);
-
 
 // Keys driver
 enum EnumKeys
@@ -291,6 +288,7 @@ enum EnumSwitchesPositions
 };
 #define IS_3POS(x)            ((x) == SW_SC)
 #define IS_TOGGLE(x)					false
+#define NUM_SWITCHES          4
 
 void keysInit(void);
 uint8_t keyState(uint8_t index);
@@ -311,7 +309,6 @@ uint32_t readTrims(void);
 
 // WDT driver
 #define WDTO_500MS                      500
-#define WDTO_1000MS                     1000
 #if defined(WATCHDOG_DISABLED) || defined(SIMU)
   #define wdt_enable(x)
   #define wdt_reset()
@@ -394,34 +391,28 @@ uint32_t pwrPressedDuration(void);
 void backlightInit(void);
 void backlightDisable(void);
 #define BACKLIGHT_DISABLE()             backlightDisable()
+#define BACKLIGHT_FORCED_ON             101
 uint8_t isBacklightEnabled(void);
-void backlightEnable();
-#define BACKLIGHT_ENABLE()            backlightEnable()
+void backlightEnable(uint8_t level);
+#define BACKLIGHT_ENABLE()            backlightEnable(currentBacklightBright)
 
 #if !defined(SIMU)
   void usbJoystickUpdate();
 #endif
-#define USB_NAME                        "FS i6X"
+#define USB_NAME                        "FS-i6X"
 #define USB_MANUFACTURER                'F', 'l', 'y', 'S', 'k', 'y', ' ', ' '  /* 8 bytes */
-#define USB_PRODUCT                     'i', '6', 'X', ' ', ' ', ' ', ' ', ' '  /* 8 Bytes */
+#define USB_PRODUCT                     'F', 'S', '-', 'i', '6', 'X', ' ', ' '  /* 8 Bytes */
 
 #if defined(__cplusplus) && !defined(SIMU)
 }
 #endif
 
 // I2C driver: EEPROM
-#define I2C_ADDRESS_EEPROM    0x50
-#define EEPROM_SIZE           (16*1024)
-#define EEPROM_PAGE_SIZE      (64)
-#define EEPROM_BLOCK_SIZE     (64)
-//#define EEPROM_VERIFY_WRITES
+#define EEPROM_SIZE                   (16*1024)
 
 void i2cInit(void);
-void eepromInit();
 void eepromReadBlock(uint8_t * buffer, size_t address, size_t size);
 void eepromWriteBlock(uint8_t * buffer, size_t address, size_t size);
-void eepromBlockErase(uint32_t address);
-uint8_t eepromReadStatus();
 uint8_t eepromIsTransferComplete();
 void i2c_test();
 
@@ -474,10 +465,11 @@ void hapticOff(void);
 extern uint8_t auxSerialMode;
 void auxSerialInit(unsigned int mode, unsigned int protocol);
 void auxSerialPutc(char c);
-#define auxSerialTelemetryInit(protocol) auxSerialInit(UART_MODE_TELEMETRY, protocol)
+#define auxSerialTelemetryInit(protocol) //auxSerialInit(UART_MODE_TELEMETRY, protocol)
 void auxSerialSbusInit(void);
 void auxSerialStop(void);
 #endif
+#define USART_FLAG_ERRORS (USART_FLAG_ORE | USART_FLAG_PE) // | USART_FLAG_FE, USART_FLAG_NE
 
 // BT driver
 #define BLUETOOTH_DEFAULT_BAUDRATE      115200
@@ -516,7 +508,9 @@ void checkTrainerSettings(void);
 
 #if defined(__cplusplus)
 //#include "fifo.h"
-//#include "dmafifo.h"
+#if defined(AUX_SERIAL_DMA_Channel_RX)
+#include "dmafifo.h"
+#endif // AUX_SERIAL_DMA_Channel_RX
 
 #if defined(CROSSFIRE)
 #define TELEMETRY_FIFO_SIZE             128
@@ -524,8 +518,10 @@ void checkTrainerSettings(void);
 #define TELEMETRY_FIFO_SIZE             64
 #endif
 
-//extern Fifo<uint8_t, TELEMETRY_FIFO_SIZE> telemetryFifo;
-//extern DMAFifo<32> auxSerialRxFifo;
+// extern Fifo<uint8_t, TELEMETRY_FIFO_SIZE> telemetryFifo;
+#if defined(AUX_SERIAL_DMA_Channel_RX)
+extern DMAFifo<32> auxSerialRxFifo;
+#endif // AUX_SERIAL_DMA_Channel_RX
 #endif
 
 

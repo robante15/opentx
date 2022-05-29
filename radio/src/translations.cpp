@@ -40,7 +40,7 @@ const char STR_OPEN9X[]  =
     ISTR(TRNMODE)
     ISTR(TRNCHN)
 #if defined(PCBTARANIS) || defined(PCBHORUS) || defined(PCBI6X)
-    ISTR(AUX_SERIALMODES)
+    ISTR(AUX_SERIAL_MODES)
     ISTR(SWTYPES)
     ISTR(POTTYPES)
     ISTR(SLIDERTYPES)
@@ -66,8 +66,10 @@ const char STR_OPEN9X[]  =
     ISTR(VALARM)
     ISTR(VALARMFN)
     ISTR(VTELPROTO)
+#if !defined(PCBI6X)
     ISTR(GPSFORMAT)
     ISTR(AMPSRC)
+#endif
     ISTR(VARIOSRC)
     ISTR(VTELEMSCREENTYPE)
 #if defined(HELI)
@@ -82,22 +84,30 @@ const char STR_OPEN9X[]  =
     ISTR(VTMRMODES)
     ISTR(DATETIME)
     ISTR(VPERSISTENT)
+#if !defined(PCBI6X)
     ISTR(VLCD)
     ISTR(VUNITSSYSTEM)
+#endif
     ISTR(VBEEPCOUNTDOWN)
     ISTR(VVARIOCENTER)
+#if !defined(PCBI6X)
     ISTR(COUNTRYCODES)
+#endif
     ISTR(USBDETECTMODES)
     ISTR(USBMODES)
     ISTR(VFAILSAFE)
     ISTR(VTRAINERMODES)
     ISTR(TARANIS_PROTOCOLS)
+#if !defined(PCBI6X)
     ISTR(R9M_REGION)
     ISTR(R9M_FCC_POWER_VALUES)
     ISTR(R9M_LBT_POWER_VALUES)
+#endif
     ISTR(TELEMETRY_PROTOCOLS)
+#if !defined(PCBI6X)
     ISTR(XJT_PROTOCOLS)
     ISTR(DSM_PROTOCOLS)
+#endif
     ISTR(I6X_PROTOCOLS)
 #if defined(MULTIMODULE)
     ISTR(MULTI_PROTOCOLS)
@@ -111,7 +121,9 @@ const char STR_OPEN9X[]  =
 #if defined(BLUETOOTH)
     ISTR(BLUETOOTH_MODES)
 #endif
+#if !defined(PCBI6X)
     ISTR(VANTENNATYPES)
+#endif
     ;
 
 // The 0-terminated-strings
@@ -394,7 +406,6 @@ const char STR_BEEP_VOLUME[]  = INDENT TR_BEEP_VOLUME;
 // const char STR_BG_VOLUME[]  = INDENT TR_BG_VOLUME;
 const char STR_PERSISTENT_MAH[]  = TR_PERSISTENT_MAH;
 
-#if defined(NAVIGATION_MENUS)
 const char STR_SELECT_MODEL[]  = TR_SELECT_MODEL;
 const char STR_CREATE_CATEGORY[]  = TR_CREATE_CATEGORY;
 const char STR_RENAME_CATEGORY[]  = TR_RENAME_CATEGORY;
@@ -418,13 +429,13 @@ const char STR_RESET_TIMER2[]  = TR_RESET_TIMER2;
 const char STR_RESET_TIMER3[]  = TR_RESET_TIMER3;
 const char STR_RESET_TELEMETRY[]  = TR_RESET_TELEMETRY;
 const char STR_STATISTICS[]  = TR_STATISTICS;
+const char STR_SAVEALLDATA[]  = "Save all";
 const char STR_ABOUT_US[]  = TR_ABOUT_US;
 const char STR_USB_JOYSTICK[]  = TR_USB_JOYSTICK;
 const char STR_USB_MASS_STORAGE[]  = TR_USB_MASS_STORAGE;
 const char STR_USB_SERIAL[]  = TR_USB_SERIAL;
 const char STR_SETUP_SCREENS[]  = TR_SETUP_SCREENS;
 const char STR_MONITOR_SCREENS[]  = TR_MONITOR_SCREENS;
-#endif
 
 #if defined(MULTIMODULE)
 const char STR_MULTI_CUSTOM[]  = TR_MULTI_CUSTOM;
@@ -450,6 +461,10 @@ const char STR_SUBTYPE[]  = TR_SUBTYPE;
 #endif
 
 const char STR_RESET_BTN[]  = TR_RESET_BTN;
+const char STR_DEBUG[]  = TR_DEBUG;
+const char STR_KEYS_BTN[]  = TR_KEYS_BTN;
+const char STR_ANALOGS_BTN[]  = TR_ANALOGS_BTN;
+const char STR_CALIB_BTN[]  = TR_CALIB_BTN;
 
 #if defined(SDCARD)
 const char STR_BACKUP_MODEL[]  = TR_BACKUP_MODEL;
@@ -664,7 +679,7 @@ const char STR_BLCOLOR[]   = TR_BLCOLOR;
   const char STR_ALTITUDE[]  = TR_ALTITUDE;
   const char STR_SCALE[]  = TR_SCALE;
   const char STR_VIEW_CHANNELS[]  = TR_VIEW_CHANNELS;
-  const char STR_AUX_SERIALMODE[]  = TR_AUX_SERIALMODE;
+  const char STR_AUX_SERIAL_MODE[]  = TR_AUX_SERIAL_MODE;
   const char STR_THROTTLE_LABEL[]  = TR_THROTTLE_LABEL;
   const char STR_SCRIPT[]  = TR_SCRIPT;
   const char STR_INPUTS[]  = TR_INPUTS;

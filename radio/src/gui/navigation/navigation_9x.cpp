@@ -222,7 +222,7 @@ void check(event_t event, uint8_t curr, const MenuHandlerFunc *menuTab, uint8_t 
   #define scrollUD 0
 #endif
 
-  if (p2valdiff || scrollUD || p1valdiff) backlightOn(); // on keypress turn the light on
+  if (p2valdiff || scrollUD || p1valdiff) resetBacklightTimeout(); // on keypress turn the light on
 
   if (menuTab) {
     uint8_t attr = 0;
@@ -256,11 +256,18 @@ void check(event_t event, uint8_t curr, const MenuHandlerFunc *menuTab, uint8_t 
           if (s_editMode >= 0)
             break;
 #endif
+#if defined(PCBI6X)
+        case EVT_KEY_LONG(KEY_RIGHT):
+#else
         case EVT_KEY_FIRST(KEY_LEFT):
+#endif
           if (curr > 0)
             cc = curr - 1;
           else
             cc = menuTabSize-1;
+#if defined(PCBI6X)
+          killEvents(event);
+#endif
           break;
 
 #if defined(ROTARY_ENCODER_NAVIGATION)
@@ -268,7 +275,11 @@ void check(event_t event, uint8_t curr, const MenuHandlerFunc *menuTab, uint8_t 
           if (s_editMode >= 0)
             break;
 #endif
+#if defined(PCBI6X)
+        case EVT_KEY_BREAK(KEY_RIGHT):
+#else
         case EVT_KEY_FIRST(KEY_RIGHT):
+#endif
           if (curr < (menuTabSize-1))
             cc = curr + 1;
           else
