@@ -37,9 +37,11 @@ void SetPRTTimPeriod(uint8_t prot) {
     case PROTO_AFHDS2A_SPI:
       WRITE_REG(TIM16->ARR, 61759);
       break;
+#if defined(AFHDS)      
     case PROTO_AFHDS_SPI:
       WRITE_REG(TIM16->ARR, 23999 /*35999*/);
       break;
+#endif      
     default:
       break;
   }
@@ -169,13 +171,13 @@ void intmoduleAfhds2aStart() {
   initAFHDS2A();
   EnablePRTTim();
 }
-
+#if defined(AFHDS)
 void intmoduleAfhdsStart() {
   intRFmoduleStart();
   initAFHDS();
   EnablePRTTim();
 }
-
+#endif
 /*-------------handler for RADIO GIO2 (FALLING AGE)---------------------------*/
 void EXTI2_3_IRQHandler(void) {
   if (EXTI->PR & RF_GIO2_PIN) {
@@ -194,8 +196,11 @@ void TIM16_IRQHandler(void) {
     if (s_current_protocol[INTERNAL_MODULE] == PROTO_AFHDS2A_SPI) {
       SETBIT(RadioState, CALLER, TIM_CALL);
       ActionAFHDS2A();
-    } else if (s_current_protocol[INTERNAL_MODULE] == PROTO_AFHDS_SPI) {
+    } 
+#if defined(AFHDS)    
+    else if (s_current_protocol[INTERNAL_MODULE] == PROTO_AFHDS_SPI) {
       ActionAFHDS();
     }
+#endif    
   }
 }

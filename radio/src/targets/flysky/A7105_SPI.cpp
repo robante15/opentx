@@ -25,7 +25,7 @@ volatile uint8_t RadioState;
 uint8_t protocol_flags = 0;
 uint8_t prev_power = 0xFD;  // unused power value
 
-uint8_t packet[40];
+//uint8_t packet[40];
 
 // int16_t telem_AFHDS2A [6];
 // uint8_t telem_status = 0;
@@ -57,6 +57,7 @@ const uint8_t AFHDS2A_A7105_regs[] = {
     0x01, 0x0f                                                                                                                            // 30 - 31
 };
 
+#if defined(AFHDS)
 const uint8_t AFHDS_A7105_regs[] = {
     /* 00    01    02    03    04    05    06    07    08    09    0A    0B    0C    0D    0E    0F  */
     0xff, 0x42, 0x00, 0x14, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x19 /*GIO1 SDO*/, 0x01 /*GIO2 WTR*/, 0x05, 0x00, 0x50,  // 00 - 0f
@@ -64,6 +65,7 @@ const uint8_t AFHDS_A7105_regs[] = {
     /*0x13*/ 0x1c, 0xc3, 0x00, 0xff, 0x00, 0x50 /*0x00*/, 0x3b, 0x00, 0x17, 0x47, 0x80, 0x03, 0x01, 0x45, 0x18, 0x00,          // 20 - 2f
     0x01, 0x0f                                                                                                                 // 30 - 31
 };
+#endif
 
 void SPI_RADIO_SendBlock(uint8_t *BufferPtr, uint16_t Size) {
   __IO uint8_t *spidr = ((__IO uint8_t *)&SPI1->DR);
@@ -360,9 +362,12 @@ void A7105_Init(void) {
 
   if (s_current_protocol[INTERNAL_MODULE] == PROTO_AFHDS2A_SPI) {
     A7105_Regs = (uint8_t *)AFHDS2A_A7105_regs;
-  } else if (s_current_protocol[INTERNAL_MODULE] == PROTO_AFHDS_SPI) {
+  } 
+  #if defined(AFHDS)
+  else if (s_current_protocol[INTERNAL_MODULE] == PROTO_AFHDS_SPI) {
     A7105_Regs = (uint8_t *)AFHDS_A7105_regs;
   }
+  #endif
 
   /*****************************************************************************/
   A7105_Reset();

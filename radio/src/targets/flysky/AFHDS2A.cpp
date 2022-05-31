@@ -24,12 +24,11 @@ extern int8_t s_editMode;
 
 static uint8_t num_ch;
 
-inline uint32_t GetChipID(void) {
+uint32_t GetChipID(void) {
   return (uint32_t)(READ_REG(*((uint32_t *)UID_BASE))) ^
          (uint32_t)(READ_REG(*((uint32_t *)(UID_BASE + 4U)))) ^
          (uint32_t)(READ_REG(*((uint32_t *)(UID_BASE + 8U))));
 }
-
 void EnableGIO(void) {
   EXTI->PR |= RF_GIO2_PIN;
   SET_BIT(EXTI->IMR, RF_GIO2_PIN);

@@ -197,12 +197,16 @@ void TX_RX_PutVal(uint32_t Val);
 void EnableGIO(void);
 void DisableGIO(void);
 
+#if defined(AFHDS)
 void initAFHDS();
 void ActionAFHDS();
+void init_afhds(uint32_t port);
+#endif
+
 void initAFHDS2A();
 void ActionAFHDS2A();
-void init_afhds(uint32_t port);
 void init_afhds2a(uint32_t port);
+
 void disable_internal_rf(uint32_t port);
 void SetPRTTimPeriod(uint8_t prot);
 uint32_t GetChipID(void);

@@ -789,9 +789,12 @@ void menuModelSetup(event_t event)
               g_model.moduleData[INTERNAL_MODULE].type = MODULE_TYPE_NONE;
             }else if(g_model.moduleData[INTERNAL_MODULE].rfProtocol == RF_I6X_PROTO_AFHDS2A){
               g_model.moduleData[INTERNAL_MODULE].type = MODULE_TYPE_AFHDS2A_SPI;
-            }else{
+            }
+#if defined(AFHDS)
+            else{
               g_model.moduleData[INTERNAL_MODULE].type = MODULE_TYPE_AFHDS_SPI;
             }
+#endif            
           }
         }
         break;
@@ -862,7 +865,7 @@ void menuModelSetup(event_t event)
                 g_model.moduleData[EXTERNAL_MODULE].type, 
                 MODULE_TYPE_NONE, 
                 #if defined(PCBI6X)
-                  IS_TRAINER_EXTERNAL_MODULE() ? MODULE_TYPE_NONE : MODULE_TYPE_COUNT-2, // exclude AFHDS2A 
+                  IS_TRAINER_EXTERNAL_MODULE() ? MODULE_TYPE_NONE : MODULE_TYPE_CROSSFIRE, // exclude AFHDS2A and AFHDS
                 #else
                   IS_TRAINER_EXTERNAL_MODULE() ? MODULE_TYPE_NONE : MODULE_TYPE_COUNT-1,               
                 #endif

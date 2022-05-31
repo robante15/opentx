@@ -4,6 +4,7 @@ option(TARANIS_INTERNAL_PPM "Taranis internal module hack to output PPM" OFF)
 option(PCBI6X_ELRSV2 "Enable ExpressLRS v2 configuration tool" NO) # ~4kB
 option(PCBI6X_USB_VBUS "Remove manual USB connection, just auto using VBUS, requires wiring USB VBUS to PA15 pad" NO)
 option(PCBI6X_BACKLIGHT_MOD "Enable adjustable backlight, requires wiring BL pad to PC9 pad" NO)
+option(PCBI6X_AFHDS "AFHDS protocol support" YES)
 
 if(PCB STREQUAL I6X)
   set(PWR_BUTTON "SWITCH" CACHE STRING "Pwr button type (PRESS/SWITCH)")
@@ -57,11 +58,18 @@ set(TARGET_SRC
   ${TARGET_SRC}
   A7105_SPI.cpp
   AFHDS2A.cpp
-  AFHDS.cpp
   intmodule_pulses_driver.cpp
   trainer_driver.cpp
   ../common/arm/stm32/timers_driver.cpp
   )
+
+if(PCBI6X_AFHDS STREQUAL YES)
+  add_definitions(-DAFHDS)
+  set(TARGET_SRC
+  ${TARGET_SRC}
+  AFHDS.cpp
+  )
+endif()
 
 add_definitions(-DSBUS)
 set(PULSES_SRC
