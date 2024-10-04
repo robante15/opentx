@@ -330,7 +330,7 @@ void handleGui(event_t event) {
       // SHIFT + LEFT/RIGHT LONG used to change telemetry screen on XLITE
       if ((!IS_KEY_LONG(event) && key == KEY_RIGHT && IS_SHIFT_PRESSED()) || (!IS_KEY_LONG(event) && key == KEY_LEFT  && IS_SHIFT_PRESSED()) || (!IS_KEY_LONG(event) && key == KEY_EXIT)) {
 #else
-      // no need to filter out MENU and ENT(short), because they are not used by menuViewTelemetryFrsky()
+      // no need to filter out MENU and ENT(short), because they are not used by menuViewTelemetry()
       if (key == KEY_PLUS || key == KEY_MINUS || (!IS_KEY_LONG(event) && key == KEY_EXIT)) {
 #endif
         // TRACE("Telemetry script event 0x%02x killed", event);
