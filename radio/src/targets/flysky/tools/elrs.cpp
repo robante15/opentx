@@ -331,27 +331,25 @@ static void paramTextSelectionLoad(Parameter * param, uint8_t * data, uint8_t of
   unitLoad(param, data, offset + len + 5);
 }
 
-static uint8_t getNextItemPos(const char * str, uint8_t last) {
-  uint8_t pos = 0;
-  while ((str[pos] != ';') && (pos < last)) pos++;
-  return pos + 1;
+static uint8_t findNthItemPos(const char * str, uint8_t nth, uint8_t len) {
+  uint8_t offset = 0, itemCount = 0;
+  while (offset < len) {
+    if (itemCount == nth) return offset;
+    if (str[offset] == ';') itemCount++;
+    offset++;
+  }
+  return offset + 1;
 }
 
 static void paramTextSelectionDisplay(Parameter * param, uint8_t y, uint8_t attr) {
   const uint16_t valuesOffset = param->offset + param->nameLength;
-  uint16_t start = valuesOffset;
-  uint8_t len;
-  uint32_t i = 0;
-  while (i++ < param->value) {
-    start += getNextItemPos((char *)&buffer[start], param->valuesLength - (start - valuesOffset));
-    if (start - valuesOffset >= param->valuesLength) {
-      lcdDrawText(COL2, y, "ERR", attr);
-      return;
-    }
+  uint8_t startOffset = findNthItemPos((char *)&buffer[valuesOffset], param->value, param->valuesLength);
+  uint8_t len = findNthItemPos((char *)&buffer[valuesOffset + startOffset], 1, param->valuesLength - startOffset) - 1;
+  if (startOffset >= param->valuesLength) {
+    lcdDrawText(COL2, y, "ERR", attr);
+    return;
   }
-  len = getNextItemPos((char *)&buffer[start], param->valuesLength - (start - valuesOffset)) - 1;
-
-  lcdDrawSizedText(COL2, y, (char *)&buffer[start], len, attr);
+  lcdDrawSizedText(COL2, y, (char *)&buffer[valuesOffset + startOffset], len, attr);
   unitDisplay(param, y, param->offset + param->nameLength + param->valuesLength);
 }
 
