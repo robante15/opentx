@@ -278,8 +278,8 @@ static void selectParam(int8_t step) {
   }
 }
 
-static uint8_t getDevice(uint8_t devId) {
-//   TRACE("getDevice %x", devId);
+static uint8_t isExistingDevice(uint8_t devId) {
+//   TRACE("isExistingDevice %x", devId);
   for (uint32_t i = 0; i < devicesLen; i++) {
     if (deviceIds[i] == devId) {
       return deviceIds[i];
@@ -458,8 +458,7 @@ static void parseDeviceInfoMessage(uint8_t* data) {
   uint8_t id = data[2];
 // TRACE("parseDev:%x folder:%d, expect:%d, devs:%d", id, currentFolderId, expectedParamsCount, devicesLen);
   offset = strlen((char*)&data[3]) + 1 + 3;
-  uint8_t devId = getDevice(id);
-  if (!devId) {
+  if (!isExistingDevice(id)) {
     deviceIds[devicesLen] = id;
     devicesLen++;
     if (currentFolderId == otherDevicesId) { // if "Other Devices" opened store devices to params
