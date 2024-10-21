@@ -69,13 +69,13 @@ struct ParamFunctions {
   void (*display)(Parameter*, uint8_t, uint8_t);
 };
 
-static constexpr uint16_t BUFFER_SIZE = 512;
+static constexpr uint16_t BUFFER_SIZE = 552;
 static uint8_t *buffer = &reusableBuffer.cToolData[0];
 static uint16_t bufferOffset = 0;
 
-static constexpr uint8_t PARAM_DATA_TAIL_SIZE = 40; // max popup packet size
+static constexpr uint8_t PARAM_DATA_TAIL_SIZE = 44; // max popup packet size
 
-static uint8_t *paramData = &reusableBuffer.cToolData[BUFFER_SIZE];
+static uint8_t *paramData = &reusableBuffer.cToolData[0];
 static uint8_t paramDataLen = 0;
 
 static constexpr uint8_t PARAMS_MAX_COUNT = 18;
@@ -366,7 +366,6 @@ static void paramStringLoad(Parameter * param, uint8_t * data, uint8_t offset) {
   memset(tmp, 0, STRING_LEN_MAX);
   str2zchar(tmp, (char*)&data[offset], len);
   bufferPush(tmp, param->maxlen);
-  // unitLoad(param, data, offset + len + 1);
 }
 
 static void paramMultibyteSave(Parameter * param) {
