@@ -351,7 +351,6 @@ static void paramIntegerLoad(Parameter * param, uint8_t * data, uint8_t offset) 
 
 static void paramStringDisplay(Parameter * param, uint8_t y, uint8_t attr) {
   editName(COL2, y, (char *)&buffer[param->offset + param->nameLength], param->maxlen, currentEvent, attr);
-  // unitDisplay(param, y, param->offset + param->nameLength + STRING_LEN_MAX);
 }
 
 static void paramInfoDisplay(Parameter * param, uint8_t y, uint8_t attr) {
