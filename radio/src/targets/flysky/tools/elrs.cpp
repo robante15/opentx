@@ -791,7 +791,7 @@ static void handleDevicePageEvent(event_t event) {
     } else {
       if (param != 0 && param->nameLength > 0) {
         if (param->type < TYPE_FOLDER) {
-          s_editMode = 1 - s_editMode;
+          s_editMode = (s_editMode) ? 0 : 1;
         }
         if (!s_editMode) {
           if (param->type == TYPE_COMMAND) {
