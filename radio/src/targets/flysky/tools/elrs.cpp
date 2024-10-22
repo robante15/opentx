@@ -102,7 +102,6 @@ static uint8_t deviceId = 0xEE;
 static uint8_t handsetId = 0xEF;
 
 static constexpr uint8_t DEVICE_NAME_MAX_LEN = 20;
-//static uint8_t *deviceName = &reusableBuffer.cToolData[BUFFER_SIZE + PARAM_DATA_TAIL_SIZE + PARAMS_SIZE + DEVICES_MAX_COUNT];
 static char deviceName[DEVICE_NAME_MAX_LEN];
 static uint8_t lineIndex = 1;
 static uint8_t pageOffset = 0;
@@ -116,8 +115,8 @@ static struct LinkStat {
   uint8_t bad;
   uint8_t flags;
 } linkstat;
+
 static constexpr uint8_t ELRS_FLAGS_INFO_MAX_LEN = 20;
-//static char *elrsFlagsInfo = (char *)&reusableBuffer.cToolData[BUFFER_SIZE + PARAM_DATA_TAIL_SIZE + PARAMS_SIZE + DEVICES_MAX_COUNT + DEVICE_NAME_MAX_LEN];
 static char elrsFlagsInfo[ELRS_FLAGS_INFO_MAX_LEN] = "";
 static uint8_t expectedParamsCount = 0;
 
@@ -175,7 +174,7 @@ static void bufferPush(char * data, uint8_t len) {
 }
 
 static void resetParamData() {
-  paramData = &reusableBuffer.cToolData[bufferOffset + 0 /* offset */];
+  paramData = &reusableBuffer.cToolData[bufferOffset];
   paramDataLen = 0;
 }
 
@@ -362,8 +361,7 @@ static void paramInfoDisplay(Parameter * param, uint8_t y, uint8_t attr) {
 static void paramStringLoad(Parameter * param, uint8_t * data, uint8_t offset) {
   uint8_t len = strlen((char*)&data[offset]);
   if (len) param->maxlen = data[offset + len + 1];
-  char tmp[STRING_LEN_MAX];
-  memset(tmp, 0, STRING_LEN_MAX);
+  char tmp[STRING_LEN_MAX] = {0};
   str2zchar(tmp, (char*)&data[offset], len);
   bufferPush(tmp, param->maxlen);
 }
