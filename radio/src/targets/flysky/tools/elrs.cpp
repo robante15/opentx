@@ -52,7 +52,7 @@ struct Parameter {
   union {
     union {
       int16_t value;
-      uint8_t maxlen;   // STRING
+      // uint8_t maxlen;   // STRING
     };
     struct {
       uint8_t timeout;      // COMMAND
@@ -350,7 +350,7 @@ static void paramIntegerLoad(Parameter * param, uint8_t * data, uint8_t offset) 
 }
 
 static void paramStringDisplay(Parameter * param, uint8_t y, uint8_t attr) {
-  editName(COL2, y, (char *)&buffer[param->offset + param->nameLength], param->maxlen, currentEvent, attr);
+  editName(COL2, y, (char *)&buffer[param->offset + param->nameLength], 10/* max len to fit screen */, currentEvent, attr);
 }
 
 static void paramInfoDisplay(Parameter * param, uint8_t y, uint8_t attr) {
@@ -359,10 +359,16 @@ static void paramInfoDisplay(Parameter * param, uint8_t y, uint8_t attr) {
 
 static void paramStringLoad(Parameter * param, uint8_t * data, uint8_t offset) {
   uint8_t len = strlen((char*)&data[offset]);
-  if (len) param->maxlen = data[offset + len + 1];
+  // if (len) param->maxlen = data[offset + len + 1];
   char tmp[STRING_LEN_MAX] = {0};
   str2zchar(tmp, (char*)&data[offset], len);
-  bufferPush(tmp, param->maxlen);
+  bufferPush(tmp, STRING_LEN_MAX);
+}
+
+static void paramStringSave(Parameter * param) {
+  char tmp[STRING_LEN_MAX + 1];
+  zchar2str(tmp, (char*)&buffer[param->offset + param->nameLength], STRING_LEN_MAX);
+  crossfireTelemetryCmd(CRSF_FRAMETYPE_PARAMETER_WRITE, param->id, (uint8_t *)&tmp, strlen(tmp) + 1);
 }
 
 static void paramMultibyteSave(Parameter * param) {
@@ -371,12 +377,6 @@ static void paramMultibyteSave(Parameter * param) {
       data[i] = (uint8_t)((param->value >> (8 * i)) & 0xFF);
     }
   crossfireTelemetryCmd(CRSF_FRAMETYPE_PARAMETER_WRITE, param->id, (uint8_t *)&data, param->size);
-}
-
-static void paramStringSave(Parameter * param) {
-  char tmp[STRING_LEN_MAX + 1];
-  zchar2str(tmp, (char*)&buffer[param->offset + param->nameLength], STRING_LEN_MAX);
-  crossfireTelemetryCmd(CRSF_FRAMETYPE_PARAMETER_WRITE, param->id, (uint8_t *)&tmp, strlen(tmp) + 1);
 }
 
 static void paramInfoLoad(Parameter * param, uint8_t * data, uint8_t offset) {
