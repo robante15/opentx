@@ -2,7 +2,8 @@ option(SHUTDOWN_CONFIRMATION "Shutdown confirmation" OFF)
 option(PCBI6X_ELRS "Enable ExpressLRS configuration tool" NO) # ~4.3kB
 option(PCBI6X_HELLO "Enable Hello World example tool" NO)
 option(PCBI6X_INAV "Enable INAV Lite telemetry screen" NO) # ~2kB
-option(PCBI6X_USB_VBUS "Remove manual USB connection, just auto using VBUS, requires wiring USB VBUS to PA15 pad" NO)
+option(PCBI6X_USB_VBUS "Adds automatic USB connection detection, requires wiring USB VBUS to PA15 pad" NO)
+option(PCBI6X_USB_MSD "Enable USB mass storage mode" YES) # 3.2kB
 option(AFHDS2A_LQI_CH "Send RSSI at channel 1-17" OFF)
 option(DFPLAYER "Enables DFPlayer on AUX3 TX" NO) # ~1.7kB
 option(FAKE_RSSI "Enables converting TRSS to RSSI data for receivers not sending RSSI" NO)
@@ -89,7 +90,9 @@ set(TARGET_SRC
   )
 endif()
 
-add_definitions(-DPCBI6X_USB_MSD) # 3.2kB
+if(PCBI6X_USB_MSD STREQUAL YES)
+add_definitions(-DPCBI6X_USB_MSD)
+endif()
 
 set(TARGET_SRC
   ${TARGET_SRC}
