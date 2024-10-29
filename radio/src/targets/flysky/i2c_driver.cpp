@@ -17,12 +17,21 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#include "i2c_driver.h"
 #include "opentx.h"
 #include "board.h"
 
-void eepromPageWrite(uint8_t* pBuffer, uint16_t WriteAddr, uint8_t NumByteToWrite);
-void eepromWaitEepromStandbyState(void);
-
+/**
+ * @brief Initializes the I2C peripheral and configures the associated GPIO pins.
+ *
+ * This function performs the following steps:
+ * 1. Deinitializes the I2C peripheral to reset its state.
+ * 2. Configures the I2C peripheral with specific settings such as timing, mode, acknowledgment, and filters.
+ * 3. Enables the I2C peripheral.
+ * 4. Configures the GPIO pins for I2C SCL and SDA with alternate function, speed, mode, output type, and pull-up/pull-down settings.
+ *
+ * The function uses predefined macros and constants for the I2C peripheral, GPIO pins, and their configurations.
+ */
 void i2cInit()
 {
   I2C_DeInit(I2C);
@@ -51,197 +60,204 @@ void i2cInit()
 }
 
 #define I2C_TIMEOUT_MAX 1000
+/**
+ * @brief Waits for a specific I2C event to occur.
+ *
+ * This function waits until the specified I2C event occurs or a timeout is reached.
+ *
+ * @param event The I2C event to wait for.
+ * @return true if the event occurred before the timeout, false otherwise.
+ */
 bool I2C_WaitEvent(uint32_t event)
 {
   uint32_t timeout = I2C_TIMEOUT_MAX;
-  while (!I2C_GetFlagStatus(I2C, event)) {
-    if ((timeout--) == 0) return false;
+  while (!I2C_GetFlagStatus(I2C, event))
+  {
+    if ((timeout--) == 0)
+      return false;
   }
   return true;
 }
 
+/**
+ * @brief Waits for a specified I2C event to be cleared.
+ *
+ * This function continuously checks the status of a specified I2C event flag
+ * and waits until it is cleared or a timeout occurs.
+ *
+ * @param event The I2C event flag to wait for.
+ * @return true if the event was cleared before the timeout, false otherwise.
+ */
 bool I2C_WaitEventCleared(uint32_t event)
 {
   uint32_t timeout = I2C_TIMEOUT_MAX;
-  while (I2C_GetFlagStatus(I2C, event)) {
-    if ((timeout--) == 0) return false;
+  while (I2C_GetFlagStatus(I2C, event))
+  {
+    if ((timeout--) == 0)
+      return false;
   }
   return true;
 }
 
 /**
-  * @brief  Reads a block of data from the EEPROM.
-  * @param  pBuffer : pointer to the buffer that receives the data read
-  *   from the EEPROM.
-  * @param  ReadAddr : EEPROM's internal address to read from.
-  * @param  NumByteToRead : number of bytes to read from the EEPROM.
-  * @retval None
-  */
-bool I2C_EE_ReadBlock(uint8_t* pBuffer, uint16_t ReadAddr, uint16_t NumByteToRead)
+ * @brief Reads a block of data from an I2C device.
+ *
+ * This function initiates an I2C read operation to retrieve a block of data from a specified device.
+ * It handles the necessary I2C communication steps, including sending the device address, memory address,
+ * and reading the requested number of bytes.
+ *
+ * @param deviceAddress The I2C address of the target device.
+ * @param pBuffer Pointer to the buffer where the read data will be stored.
+ * @param memAddr The memory address within the device from which to start reading.
+ * @param memAddrSize The size of the memory address in bytes (e.g., 1 or 2 bytes).
+ * @param numBytesToRead The number of bytes to read from the device.
+ * @return true if the read operation was successful, false otherwise.
+ */
+bool I2C_ReadBlock(uint8_t deviceAddress, uint8_t *pBuffer, uint16_t memAddr, uint8_t memAddrSize, uint16_t numBytesToRead)
 {
+  // Espera que el bus I2C esté libre
   if (!I2C_WaitEventCleared(I2C_FLAG_BUSY))
     return false;
 
-  I2C_TransferHandling(I2C, I2C_ADDRESS_EEPROM, 2, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
-  if (!I2C_WaitEvent(I2C_FLAG_TXIS))
-    return false;
+  // Inicia comunicación y envía la dirección del dispositivo en modo escritura para la fase de envío de memoria
+  I2C_TransferHandling(I2C, deviceAddress, memAddrSize, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
 
-  I2C_SendData(I2C, (uint8_t)((ReadAddr & 0xFF00) >> 8));
-  if (!I2C_WaitEvent(I2C_FLAG_TXIS))
-    return false;
+  // Enviar la dirección de memoria (si se requiere)
+  if (memAddrSize > 0)
+  {
+    for (int i = 0; i < memAddrSize; i++)
+    {
+      uint8_t addrByte = (memAddr >> (8 * (memAddrSize - 1 - i))) & 0xFF;
+      if (!I2C_WaitEvent(I2C_FLAG_TXIS)) // Espera a que el transmisor esté listo
+        return false;
+      I2C_SendData(I2C, addrByte); // Envía cada byte de la dirección de memoria
+    }
+  }
 
-  I2C_SendData(I2C, (uint8_t)(ReadAddr & 0x00FF));
+  // Espera a que la transmisión de la dirección esté completa
   if (!I2C_WaitEvent(I2C_FLAG_TC))
     return false;
 
-  I2C_TransferHandling(I2C, I2C_ADDRESS_EEPROM, NumByteToRead,  I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
+  // Configura el I2C para leer y solicita `numBytesToRead` bytes del dispositivo
+  I2C_TransferHandling(I2C, deviceAddress, numBytesToRead, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
 
-  while (NumByteToRead) {
-    if (!I2C_WaitEvent(I2C_FLAG_RXNE))
+  // Leer los datos en un bucle
+  while (numBytesToRead > 0)
+  {
+    if (!I2C_WaitEvent(I2C_FLAG_RXNE)) // Espera a que los datos estén listos
       return false;
 
-    *pBuffer++ = I2C_ReceiveData(I2C);
-    NumByteToRead--;
+    *pBuffer++ = I2C_ReceiveData(I2C); // Lee cada byte y avanza el puntero
+    numBytesToRead--;
   }
 
+  // Espera la señal de fin de transferencia y detención
   if (!I2C_WaitEvent(I2C_FLAG_STOPF))
     return false;
 
-  return true;
-}
-
-void eepromReadBlock(uint8_t * buffer, size_t address, size_t size)
-{
-  const uint8_t maxSize = 255; // I2C_TransferHandling can handle up to 255 bytes at once
-  uint32_t offset = 0;
-  while (size > maxSize) {
-    size -= maxSize;
-    while (!I2C_EE_ReadBlock(buffer + offset, address + offset, maxSize)) {
-      i2cInit();
-    }
-    offset += maxSize;
-  }
-  if (size) {
-    while (!I2C_EE_ReadBlock(buffer + offset, address + offset, size)) {
-      i2cInit();
-    }
-  }
+  return true; // Lectura exitosa
 }
 
 /**
-  * @brief  Writes buffer of data to the I2C EEPROM.
-  * @param  buffer : pointer to the buffer containing the data to be
-  *   written to the EEPROM.
-  * @param  address : EEPROM's internal address to write to.
-  * @param  size : number of bytes to write to the EEPROM.
-  * @retval None
-  */
-void eepromWriteBlock(uint8_t * buffer, size_t address, size_t size)
+ * @brief Writes a block of data to an I2C device.
+ *
+ * This function writes a specified number of bytes from a buffer to a given
+ * memory address on an I2C device. It handles the I2C communication protocol,
+ * including waiting for the bus to be free, sending the device address and
+ * memory address, and writing the data bytes.
+ *
+ * @param deviceAddress The address of the I2C device.
+ * @param pBuffer Pointer to the buffer containing the data to be written.
+ * @param memAddr The memory address on the I2C device where the data will be written.
+ * @param memAddrSize The size of the memory address in bytes (e.g., 1 or 2 bytes).
+ * @param numBytesToWrite The number of bytes to write from the buffer.
+ * @return true if the write operation was successful, false otherwise.
+ */
+bool I2C_WriteBlock(uint8_t deviceAddress, uint8_t *pBuffer, uint16_t memAddr, uint8_t memAddrSize, uint8_t numBytesToWrite)
 {
-  uint8_t offset = address % I2C_FLASH_PAGESIZE;
-  uint8_t count = I2C_FLASH_PAGESIZE - offset;
-  if (size < count) {
-    count = size;
-  }
-  while (count > 0) {
-    eepromPageWrite(buffer, address, count);
-    eepromWaitEepromStandbyState();
-    address += count;
-    buffer += count;
-    size -= count;
-    count = I2C_FLASH_PAGESIZE;
-    if (size < I2C_FLASH_PAGESIZE) {
-      count = size;
-    }
-  }
-}
-
-uint8_t eepromIsTransferComplete()
-{
-  return 1;
-}
-
-/**
-  * @brief  Writes more than one byte to the EEPROM with a single WRITE cycle.
-  * @note   The number of byte can't exceed the EEPROM page size.
-  * @param  pBuffer : pointer to the buffer containing the data to be
-  *   written to the EEPROM.
-  * @param  WriteAddr : EEPROM's internal address to write to.
-  * @param  NumByteToWrite : number of bytes to write to the EEPROM.
-  * @retval None
-  */
-bool I2C_EE_PageWrite(uint8_t* pBuffer, uint16_t WriteAddr, uint8_t NumByteToWrite)
-{
+  // Espera que el bus I2C esté libre
   if (!I2C_WaitEventCleared(I2C_FLAG_BUSY))
     return false;
 
-  I2C_TransferHandling(I2C, I2C_ADDRESS_EEPROM, 2, I2C_Reload_Mode, I2C_Generate_Start_Write);
+  // Inicia la transferencia y envía la dirección del dispositivo en modo escritura para el envío de la dirección de memoria
+  I2C_TransferHandling(I2C, deviceAddress, memAddrSize, I2C_Reload_Mode, I2C_Generate_Start_Write);
+
   if (!I2C_WaitEvent(I2C_FLAG_TXIS))
     return false;
 
-  I2C_SendData(I2C, (uint8_t)((WriteAddr & 0xFF00) >> 8));
-  if (!I2C_WaitEvent(I2C_FLAG_TXIS))
-    return false;
+  // Envía cada byte de la dirección de memoria, si se especifica `memAddrSize`
+  if (memAddrSize > 0)
+  {
+    for (int i = 0; i < memAddrSize; i++)
+    {
+      uint8_t addrByte = (memAddr >> (8 * (memAddrSize - 1 - i))) & 0xFF;
+      if (!I2C_WaitEvent(I2C_FLAG_TXIS)) // Espera a que el transmisor esté listo
+        return false;
+      I2C_SendData(I2C, addrByte); // Envía cada byte de la dirección de memoria
+    }
+  }
 
-  I2C_SendData(I2C, (uint8_t)(WriteAddr & 0x00FF));
+  // Espera a que la transmisión de la dirección esté completa antes de enviar los datos
   if (!I2C_WaitEvent(I2C_FLAG_TCR))
     return false;
 
-  I2C_TransferHandling(I2C, I2C_ADDRESS_EEPROM, NumByteToWrite, I2C_AutoEnd_Mode, I2C_No_StartStop);
+  // Configura el periférico para enviar los datos con modo `AutoEnd`
+  I2C_TransferHandling(I2C, deviceAddress, numBytesToWrite, I2C_AutoEnd_Mode, I2C_No_StartStop);
 
-  /* While there is data to be written */
-  while (NumByteToWrite--) {
-    if (!I2C_WaitEvent(I2C_FLAG_TXIS))
+  // Escribe los datos desde el buffer, byte por byte
+  while (numBytesToWrite--)
+  {
+    if (!I2C_WaitEvent(I2C_FLAG_TXIS)) // Espera a que el transmisor esté listo para el siguiente byte
       return false;
 
-    I2C_SendData(I2C, *pBuffer);
-    pBuffer++;
+    I2C_SendData(I2C, *pBuffer++); // Envía el byte actual y avanza el puntero del buffer
   }
 
+  // Espera la señal de fin de transmisión
   if (!I2C_WaitEvent(I2C_FLAG_STOPF))
     return false;
 
-  return true;
-}
-
-void eepromPageWrite(uint8_t* pBuffer, uint16_t WriteAddr, uint8_t NumByteToWrite)
-{
-  while (!I2C_EE_PageWrite(pBuffer, WriteAddr, NumByteToWrite)) {
-    i2cInit();
-  }
+  return true; // Escritura exitosa
 }
 
 /**
-  * @brief  Wait for EEPROM Standby state
-  * @param  None
-  * @retval None
-  */
-// #define I2C_PROPER_WAIT // +128B
-#define I2C_STANDBY_WAIT_MAX 100
-bool I2C_EE_WaitEepromStandbyState(void)
+ * @brief Writes data to an I2C device in pages.
+ *
+ * This function writes data to an I2C device, handling the data in pages of a specified size.
+ * It ensures that data is written correctly even if the memory address is not aligned with the page size.
+ *
+ * @param deviceAddress The I2C address of the device to write to.
+ * @param buffer Pointer to the data buffer to be written.
+ * @param memAddr The starting memory address in the device where the data will be written.
+ * @param size The total size of the data to be written.
+ * @param pageSize The size of each page to be written.
+ * @return true if the data was written successfully, false otherwise.
+ */
+bool I2C_WriteInPages(uint8_t deviceAddress, uint8_t *buffer, size_t memAddr, size_t size, uint8_t pageSize)
 {
-#if defined(I2C_PROPER_WAIT)
-  __IO uint32_t trials = 0;
-  I2C_TransferHandling(I2C, I2C_ADDRESS_EEPROM, 0, I2C_AutoEnd_Mode, I2C_No_StartStop);
-  do {
-    I2C_ClearFlag(I2C, I2C_ICR_NACKCF | I2C_ICR_STOPCF);
-    I2C_GenerateSTART(I2C, ENABLE);
-    delay_ms(1);
-    if (trials++ == I2C_STANDBY_WAIT_MAX) {
-      return false;
-    }
-  } while (I2C_GetFlagStatus(I2C, I2C_ISR_NACKF) != RESET);
+  uint8_t offset = memAddr % pageSize;
+  uint8_t count = pageSize - offset;
 
-  I2C_ClearFlag(I2C, I2C_FLAG_STOPF);
-#else
-  delay_ms(5);
-#endif
-  return true;
-}
-
-void eepromWaitEepromStandbyState(void)
-{
-  while (!I2C_EE_WaitEepromStandbyState()) {
-    i2cInit();
+  if (size < count)
+  {
+    count = size;
   }
+
+  while (size > 0)
+  {
+    if (!I2C_WriteBlock(deviceAddress, buffer, memAddr, 2, count))
+    {
+      i2cInit(); // Reinitialize if there's an error
+      continue;
+    }
+
+    // Actualiza los punteros y contadores
+    memAddr += count;
+    buffer += count;
+    size -= count;
+
+    // Recalcula el tamaño para la próxima página
+    count = (size < pageSize) ? size : pageSize;
+  }
+  return true;
 }

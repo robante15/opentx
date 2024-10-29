@@ -145,6 +145,7 @@ set(TARGET_SRC
   extmodule_driver.cpp
   adc_driver.cpp
   i2c_driver.cpp
+  eeprom_driver.cpp
   crc_driver.cpp
   ../common/arm/stm32/mixer_scheduler_driver.cpp
   )
